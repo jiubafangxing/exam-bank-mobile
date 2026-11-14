@@ -112,7 +112,7 @@ jobs:
       - name: 打包 .app
         working-directory: ios
         run: |
-          cd build/Build/Products/Debug-iphonesimulator
+          cd build/Build/Products/Release-iphonesimulator
           ditto -c -k --sequesterRsrc --keepParent ExamMobile.app ../../../../ExamMobile-simulator.zip
       - uses: actions/upload-artifact@v4
         with:

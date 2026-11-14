@@ -24,3 +24,12 @@
 # 保留行号用于崩溃定位，但不在日志打印敏感字段
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# R8 full mode: optional / transitively referenced classes
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+-dontwarn javax.annotation.**
+-dontwarn kotlinx.serialization.**
+-dontwarn coil.**
+-dontwarn okio.**

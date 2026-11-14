@@ -80,5 +80,5 @@ jobs:
         if: success()
         with:
           name: exam-mobile-ios-simulator
-          path: ios/build/Build/Products/Debug-iphonesimulator/*.app
+          path: ios/build/Build/Products/Release-iphonesimulator/*.app
           if-no-files-found: error
