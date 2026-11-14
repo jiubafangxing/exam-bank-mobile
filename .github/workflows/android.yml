@@ -63,7 +63,7 @@ jobs:
           set -o pipefail
           if [ -x ./gradlew ]; then CMD=./gradlew; else CMD=gradle; fi
           echo "Using: $CMD"
-          $CMD :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          $CMD :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
 
       - name: 输出构建错误
         if: failure()
@@ -91,6 +91,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: exam-mobile-android-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: exam-mobile-android-release
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error

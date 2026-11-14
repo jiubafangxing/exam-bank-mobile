@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,7 +45,7 @@ fun PageScaffold(
                     navigationIcon = {
                         if (onBack != null) {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = Tokens.TextPrimary)
+                                Icon(Icons.Filled.ArrowBack, contentDescription = "返回", tint = Tokens.TextPrimary)
                             }
                         }
                     },
@@ -161,7 +161,7 @@ fun ListRow(
             Spacer(Modifier.width(6.dp))
         }
         if (showArrow) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Tokens.TextTertiary)
+            Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = Tokens.TextTertiary)
         }
     }
 }

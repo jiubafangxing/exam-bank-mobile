@@ -1,0 +1,2 @@
+# ArkGuard：只做顶层名称混淆，不混淆属性名（避免破坏 JSON 接口字段）
+-enable-toplevel-obfuscation

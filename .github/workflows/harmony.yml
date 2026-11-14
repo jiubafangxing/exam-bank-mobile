@@ -75,7 +75,7 @@ jobs:
         run: |
           set -o pipefail
           hvigorw clean --no-daemon 2>&1 | tee -a build.log || true
-          hvigorw --mode module -p product=default -p buildMode=debug \
+          hvigorw --mode module -p product=default -p buildMode=release \
             assembleHap --no-daemon --stacktrace 2>&1 | tee -a build.log
 
       - name: 输出构建错误

@@ -1,6 +1,15 @@
 {
   "apiType": "stageMode",
-  "buildOption": {},
+  "buildOption": {
+    "arkOptions": {
+      "obfuscation": {
+        "ruleOptions": {
+          "enable": true,
+          "files": ["./obfuscation-rules.txt"]
+        }
+      }
+    }
+  },
   "targets": [
     { "name": "default" }
   ]

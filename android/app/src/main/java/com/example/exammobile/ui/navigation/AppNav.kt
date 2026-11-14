@@ -3,7 +3,7 @@ package com.example.exammobile.ui.navigation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -111,7 +111,7 @@ private data class TabItem(val route: String, val title: String, val icon: Image
 
 private val tabs = listOf(
     TabItem(Routes.HOME, "首页", Icons.Filled.Home),
-    TabItem(Routes.EXAMS, "考试", Icons.AutoMirrored.Filled.List),
+    TabItem(Routes.EXAMS, "考试", Icons.Filled.List),
     TabItem(Routes.PRACTICE, "练习", Icons.Filled.Edit),
     TabItem(Routes.PROFILE, "我的", Icons.Filled.Person)
 )

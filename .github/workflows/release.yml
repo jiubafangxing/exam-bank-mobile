@@ -34,6 +34,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+      - name: 可选：解码 Android 签名
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.jks
+            echo "RELEASE_STORE_FILE=android/release.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "未配置 Android 签名，使用 debug key 签名 release APK"
+          fi
       - name: 注入构建配置
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
@@ -46,16 +62,16 @@ jobs:
             echo "::error::缺少 API_BASE_URL"; exit 1
           fi
           ANDROID_SDK_DIR="$ANDROID_SDK_ROOT" bash scripts/inject-config.sh
-      - name: 构建 Debug APK
+      - name: 构建 Release APK（R8 混淆 + 资源裁剪）
         working-directory: android
         run: |
           set -o pipefail
           if [ -x ./gradlew ]; then CMD=./gradlew; else CMD=gradle; fi
-          $CMD :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          $CMD :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
       - uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
   ios:
@@ -88,7 +104,7 @@ jobs:
           xcodebuild \
             -project ExamMobile.xcodeproj \
             -scheme ExamMobile \
-            -configuration Debug \
+            -configuration Release \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
@@ -100,7 +116,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent ExamMobile.app ../../../../ExamMobile-simulator.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: ios-app
+          name: ios-release-app
           path: ios/ExamMobile-simulator.zip
           if-no-files-found: error
 
@@ -146,11 +162,11 @@ jobs:
         run: |
           set -o pipefail
           ohpm install --all 2>&1 | tee build.log
-          hvigorw --mode module -p product=default -p buildMode=debug \
+          hvigorw --mode module -p product=default -p buildMode=release \
             assembleHap --no-daemon --stacktrace 2>&1 | tee -a build.log
       - uses: actions/upload-artifact@v4
         with:
-          name: harmony-hap
+          name: harmony-release-hap
           path: |
             harmony/entry/build/**/outputs/**/*.hap
             harmony/entry/build/**/outputs/**/*.app
@@ -174,9 +190,9 @@ jobs:
           body: |
             Automated build from `${{ github.sha }}`.
 
-            - Android: debug APK（可直接安装测试）
-            - iOS: simulator `.app`（需签名后才能装真机）
-            - HarmonyOS: unsigned HAP（需签名后才能安装）
+            - Android: release APK（R8 混淆/资源裁剪；默认 debug key 签名，配置 keystore Secrets 后为正式签名）
+            - iOS: Release simulator `.app`（Swift -O 优化 + 符号剥离；真机安装需签名）
+            - HarmonyOS: release unsigned HAP（ArkGuard 顶层名称混淆；安装需签名）
           files: dist/**/*
           fail_on_unmatched_files: false
           draft: false

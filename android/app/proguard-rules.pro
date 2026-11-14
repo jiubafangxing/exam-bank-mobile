@@ -1,4 +1,7 @@
 # ---- kotlinx.serialization ----
+-allowaccessmodification
+-keep class com.example.exammobile.core.model.** { *; }
+-keep class kotlinx.serialization.** { *; }
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.**
 -keepclassmembers class com.example.exammobile.core.model.** {
