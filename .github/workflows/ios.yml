@@ -32,7 +32,7 @@ jobs:
           QUIET: '1'
         run: |
           if [ -z "$API_BASE_URL" ]; then
-            echo "::error::缺少 API_BASE_URL 仓库变量（Settings → Variables）"; exit 1
+            echo "::error::缺少 API_BASE_URL（Settings → Secrets and variables → Actions）"; exit 1
           fi
           bash scripts/inject-config.sh
 
@@ -43,6 +43,7 @@ jobs:
       - name: 构建（模拟器，免签名）
         working-directory: ios
         run: |
+          set -o pipefail
           xcodebuild \
             -project ExamMobile.xcodeproj \
             -scheme ExamMobile \
@@ -50,9 +51,33 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee build.log
+
+      - name: 输出构建错误
+        if: failure()
+        working-directory: ios
+        run: |
+          echo "## iOS build errors" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f build.log ]; then
+            grep -nE 'error:|fatal error:|BUILD FAILED|The following build commands failed' build.log | tail -60 | while IFS= read -r line; do
+              echo "::error file=ios/,line=1::${line}"
+            done
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -180 build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::build.log not found"
+          fi
 
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exam-mobile-ios-build-log
+          path: ios/build.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: exam-mobile-ios-simulator
           path: ios/build/Build/Products/Debug-iphonesimulator/*.app

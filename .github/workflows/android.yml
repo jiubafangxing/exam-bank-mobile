@@ -40,6 +40,9 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Gradle 版本
+        run: gradle --version
+
       # 域名等构建配置来自仓库变量/密钥，绝不进仓库
       - name: 注入构建配置
         env:
@@ -54,19 +57,39 @@ jobs:
           fi
           ANDROID_SDK_DIR="$ANDROID_SDK_ROOT" bash scripts/inject-config.sh
 
-      - name: 生成 Gradle Wrapper（首次）
-        working-directory: android
-        run: |
-          if [ ! -f gradle/wrapper/gradle-wrapper.properties ]; then
-            gradle wrapper --gradle-version 8.7
-          fi
-          chmod +x gradlew
-
       - name: 构建 Debug
         working-directory: android
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          if [ -x ./gradlew ]; then CMD=./gradlew; else CMD=gradle; fi
+          echo "Using: $CMD"
+          $CMD :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+
+      - name: 输出构建错误
+        if: failure()
+        working-directory: android
+        run: |
+          echo "## Android build errors" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f build.log ]; then
+            grep -nE 'error:|e: |FAILURE:|What went wrong|Unresolved reference|Execution failed|Could not|Caused by|> Task .* FAILED' build.log | tail -60 | while IFS= read -r line; do
+              echo "::error file=android/${line%%:*},line=1::${line}"
+            done
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -120 build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::build.log not found"
+          fi
 
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exam-mobile-android-build-log
+          path: android/build.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: exam-mobile-android-debug
           path: android/app/build/outputs/apk/debug/*.apk
