@@ -105,7 +105,7 @@ struct PracticeTakingPage {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else if (this.questions.length > this.index) {
         Row() {
           Text((this.record.title ? this.record.title : (this.record.setName ? this.record.setName : '练习')) + ' · 第 ' + (this.record.attemptNo ? this.record.attemptNo : 1) + ' 次')

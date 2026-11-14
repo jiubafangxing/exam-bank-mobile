@@ -30,7 +30,7 @@ struct PracticeStatsPage {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else {
         CardContainer() {
           Column() {
@@ -42,7 +42,7 @@ struct PracticeStatsPage {
             KeyValueRow({ label: '累计做题', value: String(this.stats.totalQuestions ? this.stats.totalQuestions : 0) })
             KeyValueRow({ label: '答对', value: String(this.stats.correctQuestions ? this.stats.correctQuestions : 0) })
           }.width('100%')
-        }.margin(16)
+        }
       }
     }
     .width('100%').height('100%').backgroundColor(Tokens.BACKGROUND)

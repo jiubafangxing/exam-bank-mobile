@@ -38,7 +38,7 @@ struct ScorePage {
       if (this.loading && this.records.length === 0) {
         LoadingView()
       } else if (this.error.length > 0 && this.records.length === 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else if (this.records.length === 0) {
         EmptyView({ text: '暂无成绩记录' })
       } else {

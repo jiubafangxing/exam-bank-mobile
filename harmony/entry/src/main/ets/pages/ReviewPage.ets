@@ -56,9 +56,9 @@ struct ReviewPage {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else if (this.review.allowed === false) {
-        ErrorBanner({ message: this.policyText(this.review.policy) }).margin(16)
+        Column() { ErrorBanner({ message: this.policyText(this.review.policy) }) }.margin(16)
       } else {
         Scroll() {
           Column({ space: 12 }) {

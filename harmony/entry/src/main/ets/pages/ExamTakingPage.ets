@@ -325,7 +325,7 @@ struct ExamTakingPage {
         if (!this.loaded) {
           LoadingView()
         } else if (this.error.length > 0) {
-          ErrorBanner({ message: this.error }).margin(16)
+          Column() { ErrorBanner({ message: this.error }) }.margin(16)
         } else {
           Row() {
             Text('第 ' + (this.currentIndex + 1) + ' / ' + this.questions.length + ' 题').fontSize(12).fontColor(Tokens.TEXT_SECONDARY)

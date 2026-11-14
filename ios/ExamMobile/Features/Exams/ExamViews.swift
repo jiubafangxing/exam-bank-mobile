@@ -160,57 +160,66 @@ struct ExamTakingView: View {
     }
 
     var body: some View {
-        Group {
-            switch vm.state {
-            case .idle, .loading:
-                LoadingView()
-            case .failure(let message):
-                VStack(spacing: 12) {
-                    ErrorBanner(message: message)
-                    SecondaryButton(title: "重试") { Task { await vm.load() } }
+        takingBody
+            .pageBackground()
+            .navigationTitle(attemptTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    CountdownText(remaining: vm.remaining)
                 }
-                .padding(Tokens.pagePadding)
-            case .success(let attempt):
-                content(attempt)
             }
-        }
-        .pageBackground()
-        .navigationTitle(attemptTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                CountdownText(remaining: vm.remaining)
+            .toast($vm.toast)
+            .sheet(isPresented: $showSheet) {
+                answerSheet
             }
-        }
-        .toast($vm.toast)
-        .sheet(isPresented: $showSheet) { answerSheet }
-        .alert("交卷确认", isPresented: $showConfirm) {
-            Button("确认交卷", role: .destructive) { Task { await vm.submit(auto: false) } }
-            Button("再检查一下", role: .cancel) {}
-        } message: {
-            Text("交卷后不可再修改答案，确认交卷？")
-        }
-        .navigationDestination(isPresented: $showResult) {
-            ResultView(attemptId: resultId, repository: env.repository)
-        }
-        .onChange(of: vm.submittedAttemptId) { newValue in
-            if let id = newValue, !id.isEmpty {
-                resultId = id
-                showResult = true
+            .alert("交卷确认", isPresented: $showConfirm) {
+                Button("确认交卷", role: .destructive) {
+                    Task { await vm.submit(auto: false) }
+                }
+                Button("再检查一下", role: .cancel) {}
+            } message: {
+                Text("交卷后不可再修改答案，确认交卷？")
             }
-        }
-        .task {
-            if case .idle = vm.state { await vm.load() }
-            else if case .loading = vm.state { await vm.load() }
-        }
-        .onAppear { vm.reportEvent("FOCUS", "onAppear") }
-        .onDisappear { vm.reportEvent("APP_SWITCH", "onDisappear") }
-        .onChange(of: scenePhase) { phase in
-            vm.reportEvent(phase == .active ? "FOCUS" : "APP_SWITCH", phase == .active ? "active" : "inactive")
+            .navigationDestination(isPresented: $showResult) {
+                ResultView(attemptId: resultId, repository: env.repository)
+            }
+            .onChange(of: vm.submittedAttemptId) { (newValue: String?) in
+                handleSubmitted(newValue)
+            }
+            .task {
+                await vm.loadIfNeeded()
+            }
+            .onAppear {
+                vm.reportEvent("FOCUS", "onAppear")
+            }
+            .onDisappear {
+                vm.reportEvent("APP_SWITCH", "onDisappear")
+            }
+            .modifier(ExamScenePhaseModifier(vm: vm))
+    }
+
+    @ViewBuilder
+    private var takingBody: some View {
+        switch vm.state {
+        case .idle, .loading:
+            LoadingView()
+        case .failure(let message):
+            VStack(spacing: 12) {
+                ErrorBanner(message: message)
+                SecondaryButton(title: "重试") { Task { await vm.load() } }
+            }
+            .padding(Tokens.pagePadding)
+        case .success(let attempt):
+            content(attempt)
         }
     }
 
-    @Environment(\.scenePhase) private var scenePhase
+    private func handleSubmitted(_ id: String?) {
+        guard let id = id, !id.isEmpty else { return }
+        resultId = id
+        showResult = true
+    }
 
     private var attemptTitle: String {
         if case .success(let attempt) = vm.state { return attempt.examName ?? "在线作答" }
@@ -392,6 +401,18 @@ struct ExamTakingView: View {
                 .padding(16)
                 .background(Tokens.surface)
             }
+        }
+    }
+}
+
+private struct ExamScenePhaseModifier: ViewModifier {
+    @ObservedObject var vm: ExamTakingViewModel
+    @Environment(\.scenePhase) private var scenePhase
+
+    func body(content: Content) -> some View {
+        content.onChange(of: scenePhase) { (phase: ScenePhase) in
+            vm.reportEvent(phase == .active ? "FOCUS" : "APP_SWITCH",
+                           phase == .active ? "active" : "inactive")
         }
     }
 }

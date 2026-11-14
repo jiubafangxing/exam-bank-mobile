@@ -36,7 +36,7 @@ struct AnalysisPage {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else {
         Scroll() {
           Column({ space: 12 }) {
@@ -64,8 +64,9 @@ struct AnalysisPage {
               CardContainer() {
                 Flex({ wrap: FlexWrap.Wrap }) {
                   ForEach(this.weakPoints(), (point: string) => {
-                    TagPill({ label: Formatters.questionTypeLabel(point), fg: Tokens.WARNING, bg: Tokens.WARNING_SOFT })
-                      .margin({ right: 8, bottom: 8 })
+                    Column() {
+                      TagPill({ label: Formatters.questionTypeLabel(point), fg: Tokens.WARNING, bg: Tokens.WARNING_SOFT })
+                    }.margin({ right: 8, bottom: 8 })
                   }, (point: string, i: number) => i.toString())
                 }.width('100%')
               }

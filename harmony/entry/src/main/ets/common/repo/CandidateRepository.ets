@@ -9,6 +9,20 @@ import {
   AttemptReview, ScorePage, PracticeVerdict, FaceUploadResponse
 } from '../model/Models';
 
+
+interface LoginBody { username: string; password: string; tenantId?: string; tenantCode?: string; }
+interface OtpBody { phone: string; scene: string; }
+interface SmsLoginBody { phone: string; code: string; tenantId?: string; tenantCode?: string; }
+interface RegisterBody { username: string; password: string; realName: string; phone: string; }
+interface ResetPasswordBody { phone: string; code: string; newPassword: string; }
+interface SwitchTenantBody { tenantId: string; }
+interface AppealBody { examId: string; reason: string; }
+interface JoinClassBody { password?: string; }
+interface CreateOrderBody { bizType: string; bizId: string; }
+interface FaceCollectBody { photoUrl: string; }
+interface FaceVerifyBody { photoUrl?: string; examId?: string; livenessStatus?: string; }
+interface DeviceBindBody { deviceId: string; deviceName: string; deviceType: string; }
+
 export class CandidateRepository {
   private client: ApiClient;
 
@@ -22,26 +36,26 @@ export class CandidateRepository {
   }
 
   async login(username: string, password: string, tenantId?: string, tenantCode?: string): Promise<LoginResponse> {
-    const body = JSON.stringify({ username: username, password: password, tenantId: tenantId, tenantCode: tenantCode });
+    const body = JSON.stringify({ username: username, password: password, tenantId: tenantId, tenantCode: tenantCode } as LoginBody);
     return await this.client.post('/auth/login', body) as LoginResponse;
   }
 
   async sendOtp(phone: string, scene: string = 'login'): Promise<AuthOperationResult> {
-    return await this.client.post('/auth/send-otp', JSON.stringify({ phone: phone, scene: scene })) as AuthOperationResult;
+    return await this.client.post('/auth/send-otp', JSON.stringify({ phone: phone, scene: scene } as OtpBody)) as AuthOperationResult;
   }
 
   async smsLogin(phone: string, code: string, tenantId?: string, tenantCode?: string): Promise<LoginResponse> {
-    const body = JSON.stringify({ phone: phone, code: code, tenantId: tenantId, tenantCode: tenantCode });
+    const body = JSON.stringify({ phone: phone, code: code, tenantId: tenantId, tenantCode: tenantCode } as SmsLoginBody);
     return await this.client.post('/auth/login-sms', body) as LoginResponse;
   }
 
   async register(username: string, password: string, realName: string, phone: string): Promise<LoginResponse> {
-    const body = JSON.stringify({ username: username, password: password, realName: realName, phone: phone });
+    const body = JSON.stringify({ username: username, password: password, realName: realName, phone: phone } as RegisterBody);
     return await this.client.post('/auth/register', body) as LoginResponse;
   }
 
   async resetPassword(phone: string, code: string, newPassword: string): Promise<AuthOperationResult> {
-    const body = JSON.stringify({ phone: phone, code: code, newPassword: newPassword });
+    const body = JSON.stringify({ phone: phone, code: code, newPassword: newPassword } as ResetPasswordBody);
     return await this.client.post('/auth/reset-password', body) as AuthOperationResult;
   }
 
@@ -58,7 +72,7 @@ export class CandidateRepository {
   }
 
   async switchTenant(tenantId: string): Promise<LoginResponse> {
-    return await this.client.post('/auth/switch-tenant', JSON.stringify({ tenantId: tenantId })) as LoginResponse;
+    return await this.client.post('/auth/switch-tenant', JSON.stringify({ tenantId: tenantId } as SwitchTenantBody)) as LoginResponse;
   }
 
   // 考试
@@ -142,7 +156,7 @@ export class CandidateRepository {
   }
 
   async createAppeal(examId: string, reason: string): Promise<Object> {
-    return await this.client.post('/appeals', JSON.stringify({ examId: examId, reason: reason }));
+    return await this.client.post('/appeals', JSON.stringify({ examId: examId, reason: reason } as AppealBody));
   }
 
   // 练习
@@ -155,7 +169,7 @@ export class CandidateRepository {
   }
 
   async practiceStart(setId: string): Promise<PracticeRecord> {
-    return await this.client.post('/practice-sets/' + setId + '/start', JSON.stringify({})) as PracticeRecord;
+    return await this.client.post('/practice-sets/' + setId + '/start', '{}') as PracticeRecord;
   }
 
   async practiceAnswer(recordId: string, body: PracticeAnswerRequest): Promise<PracticeVerdict> {
@@ -208,7 +222,7 @@ export class CandidateRepository {
   }
 
   async joinClass(id: string, password?: string): Promise<Object> {
-    return await this.client.post('/classes/' + id + '/join', JSON.stringify({ password: password }));
+    return await this.client.post('/classes/' + id + '/join', JSON.stringify({ password: password } as JoinClassBody));
   }
 
   // 会员 / 订单
@@ -225,7 +239,7 @@ export class CandidateRepository {
   }
 
   async createOrder(bizType: string, bizId: string): Promise<OrderItem> {
-    return await this.client.post('/orders', JSON.stringify({ bizType: bizType, bizId: bizId })) as OrderItem;
+    return await this.client.post('/orders', JSON.stringify({ bizType: bizType, bizId: bizId } as CreateOrderBody)) as OrderItem;
   }
 
   async payOrder(id: string): Promise<Object> {
@@ -263,11 +277,11 @@ export class CandidateRepository {
   }
 
   async faceCollect(photoUrl: string): Promise<Object> {
-    return await this.client.post('/face/collect', JSON.stringify({ photoUrl: photoUrl }));
+    return await this.client.post('/face/collect', JSON.stringify({ photoUrl: photoUrl } as FaceCollectBody));
   }
 
   async faceVerify(photoUrl?: string, examId?: string, livenessStatus?: string): Promise<Object> {
-    return await this.client.post('/face/verify', JSON.stringify({ photoUrl: photoUrl, examId: examId, livenessStatus: livenessStatus }));
+    return await this.client.post('/face/verify', JSON.stringify({ photoUrl: photoUrl, examId: examId, livenessStatus: livenessStatus } as FaceVerifyBody));
   }
 
   async faceUpload(data: ArrayBuffer, filename: string = 'face.jpg'): Promise<FaceUploadResponse> {
@@ -279,7 +293,7 @@ export class CandidateRepository {
   }
 
   async bindDevice(deviceId: string, deviceName: string, deviceType: string): Promise<Object> {
-    return await this.client.post('/auth/device/bind', JSON.stringify({ deviceId: deviceId, deviceName: deviceName, deviceType: deviceType }));
+    return await this.client.post('/auth/device/bind', JSON.stringify({ deviceId: deviceId, deviceName: deviceName, deviceType: deviceType } as DeviceBindBody));
   }
 
   async unbindDevice(deviceId: string): Promise<Object> {

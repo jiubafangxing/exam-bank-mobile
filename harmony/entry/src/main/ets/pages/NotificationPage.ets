@@ -54,7 +54,7 @@ struct NotificationPage {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else {
         Scroll() {
           Column({ space: 8 }) {

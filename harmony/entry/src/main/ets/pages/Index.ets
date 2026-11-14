@@ -123,12 +123,12 @@ struct HomeTab {
               }.alignItems(HorizontalAlign.Start).layoutWeight(1)
               Text('›').fontSize(20).fontColor(Tokens.TEXT_TERTIARY)
             }.width('100%')
+            .onClick(() => {
+              const base = AppConfig.REGISTRATION_URL.endsWith('/') ? AppConfig.REGISTRATION_URL : AppConfig.REGISTRATION_URL + '/';
+              const context = getContext(this) as common.UIAbilityContext;
+              context.startAbility({ action: 'ohos.want.action.viewData', uri: base + 'campaigns' }).catch(() => {});
+            })
           }
-          .onClick(() => {
-            const base = AppConfig.REGISTRATION_URL.endsWith('/') ? AppConfig.REGISTRATION_URL : AppConfig.REGISTRATION_URL + '/';
-            const context = getContext(this) as common.UIAbilityContext;
-            context.startAbility({ action: 'ohos.want.action.viewData', uri: base + 'campaigns' }).catch(() => {});
-          })
         }
 
         if (this.loading) {
@@ -290,7 +290,7 @@ struct ExamsTab {
       if (this.loading) {
         LoadingView()
       } else if (this.error.length > 0) {
-        ErrorBanner({ message: this.error }).margin(16)
+        Column() { ErrorBanner({ message: this.error }) }.margin(16)
       } else {
         Scroll() {
           Column({ space: 8 }) {

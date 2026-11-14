@@ -56,6 +56,12 @@ final class ExamTakingViewModel: ObservableObject {
         }
     }
 
+    @MainActor
+    func loadIfNeeded() async {
+        if case .idle = state { await load() }
+        else if case .loading = state { await load() }
+    }
+
     private func apply(_ data: AttemptState) {
         var ans: [String: LocalAnswer] = [:]
         var fills: [String: [String]] = [:]
