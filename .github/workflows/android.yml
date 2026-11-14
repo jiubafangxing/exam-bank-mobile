@@ -57,7 +57,7 @@ jobs:
           fi
           ANDROID_SDK_DIR="$ANDROID_SDK_ROOT" bash scripts/inject-config.sh
 
-      - name: 构建 Debug
+      - name: 构建 Release
         working-directory: android
         run: |
           set -o pipefail

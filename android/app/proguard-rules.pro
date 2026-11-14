@@ -33,3 +33,6 @@
 -dontwarn kotlinx.serialization.**
 -dontwarn coil.**
 -dontwarn okio.**
+
+# Tink (security-crypto) 编译期注解，运行期不需要
+-dontwarn com.google.errorprone.annotations.**
