@@ -59,21 +59,23 @@ struct NotificationPage {
         Scroll() {
           Column({ space: 8 }) {
             ForEach(this.list, (item: NotificationItem) => {
-              CardContainer() {
-                Column({ space: 4 }) {
-                  Row({ space: 6 }) {
-                    if (item.read !== true) {
-                      Circle().width(7).height(7).fill(Tokens.DANGER)
+              Column() {
+                CardContainer() {
+                  Column({ space: 4 }) {
+                    Row({ space: 6 }) {
+                      if (item.read !== true) {
+                        Circle().width(7).height(7).fill(Tokens.DANGER)
+                      }
+                      Text(item.title ? item.title : '').fontSize(15).fontWeight(FontWeight.Medium)
+                    }.width('100%')
+                    if (item.content) {
+                      Text(item.content).fontSize(12).fontColor(Tokens.TEXT_SECONDARY).maxLines(3)
                     }
-                    Text(item.title ? item.title : '').fontSize(15).fontWeight(FontWeight.Medium)
-                  }.width('100%')
-                  if (item.content) {
-                    Text(item.content).fontSize(12).fontColor(Tokens.TEXT_SECONDARY).maxLines(3)
-                  }
-                  if (item.createdAt) {
-                    Text(item.createdAt).fontSize(11).fontColor(Tokens.TEXT_TERTIARY)
-                  }
-                }.alignItems(HorizontalAlign.Start).width('100%')
+                    if (item.createdAt) {
+                      Text(item.createdAt).fontSize(11).fontColor(Tokens.TEXT_TERTIARY)
+                    }
+                  }.alignItems(HorizontalAlign.Start).width('100%')
+                }
               }
               .onClick(() => { this.markOne(item); })
             }, (item: NotificationItem, index: number) => index.toString())

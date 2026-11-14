@@ -17,12 +17,12 @@ import {
 @Entry
 @Component
 struct Index {
-  @State tabIndex: number = 0;
+  @State activeTab: number = 0;
 
   build() {
-    Tabs({ barPosition: BarPosition.End, index: this.tabIndex }) {
+    Tabs({ barPosition: BarPosition.End, index: this.activeTab }) {
       TabContent() {
-        HomeTab({ tabIndex: $tabIndex })
+        HomeTab({ activeTab: $activeTab })
       }.tabBar(this.tabBar('首页', 0))
 
       TabContent() {
@@ -34,11 +34,11 @@ struct Index {
       }.tabBar(this.tabBar('练习', 2))
 
       TabContent() {
-        ProfileTab({ tabIndex: $tabIndex })
+        ProfileTab({ activeTab: $activeTab })
       }.tabBar(this.tabBar('我的', 3))
     }
     .onChange((index: number) => {
-      this.tabIndex = index;
+      this.activeTab = index;
     })
     .barHeight(56)
     .backgroundColor(Tokens.BACKGROUND)
@@ -49,7 +49,7 @@ struct Index {
     Column() {
       Text(title)
         .fontSize(12)
-        .fontColor(this.tabIndex === index ? Tokens.PRIMARY : Tokens.TEXT_SECONDARY)
+        .fontColor(this.activeTab === index ? Tokens.PRIMARY : Tokens.TEXT_SECONDARY)
     }
     .width('100%')
     .height('100%')
@@ -61,7 +61,7 @@ struct Index {
 
 @Component
 struct HomeTab {
-  @Link tabIndex: number;
+  @Link activeTab: number;
   @State components: HomeComponent[] = [];
   @State loading: boolean = true;
   @State error: string = '';
@@ -100,8 +100,8 @@ struct HomeTab {
         CardContainer() {
           Column({ space: 14 }) {
             Row() {
-              this.quickCell('我的考试', () => { this.tabIndex = 1; })
-              this.quickCell('在线练习', () => { this.tabIndex = 2; })
+              this.quickCell('我的考试', () => { this.activeTab = 1; })
+              this.quickCell('在线练习', () => { this.activeTab = 2; })
               this.quickCell('错题集', () => { router.pushUrl({ url: 'pages/WrongPage' }); })
               this.quickCell('班级', () => { router.pushUrl({ url: 'pages/ClassPage' }); })
             }.width('100%')
@@ -320,27 +320,29 @@ struct ExamsTab {
               }, (exam: OpenExamSummary, index: number) => index.toString())
             } else {
               ForEach(this.filtered(), (exam: ExamSummary) => {
-                CardContainer() {
-                  Column({ space: 6 }) {
-                    Row() {
-                      Text(exam.name ? exam.name : '').fontSize(16).fontWeight(FontWeight.Medium).fontColor(Tokens.TEXT_PRIMARY).layoutWeight(1).maxLines(1)
-                      TagPill({
-                        label: Formatters.attemptStatusLabel(exam.attemptStatus),
-                        fg: ['STARTED', 'IN_PROGRESS'].indexOf(exam.attemptStatus ? exam.attemptStatus : '') >= 0 ? Tokens.PRIMARY : Tokens.TEXT_SECONDARY,
-                        bg: ['STARTED', 'IN_PROGRESS'].indexOf(exam.attemptStatus ? exam.attemptStatus : '') >= 0 ? Tokens.PRIMARY_SOFT : Tokens.SURFACE_ALT
-                      })
-                    }.width('100%')
-                    if (exam.paperName) {
-                      Text(exam.paperName).fontSize(13).fontColor(Tokens.TEXT_SECONDARY)
-                    }
-                    Row({ space: 16 }) {
-                      Text(Formatters.epochToDateTime(exam.startEpochMillis)).fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
-                      Text(Formatters.durationText(exam.durationSeconds)).fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
-                      if (exam.score !== undefined) {
-                        Text('得分 ' + Formatters.scoreText(exam.score)).fontSize(12).fontColor(Tokens.PRIMARY)
+                Column() {
+                  CardContainer() {
+                    Column({ space: 6 }) {
+                      Row() {
+                        Text(exam.name ? exam.name : '').fontSize(16).fontWeight(FontWeight.Medium).fontColor(Tokens.TEXT_PRIMARY).layoutWeight(1).maxLines(1)
+                        TagPill({
+                          label: Formatters.attemptStatusLabel(exam.attemptStatus),
+                          fg: ['STARTED', 'IN_PROGRESS'].indexOf(exam.attemptStatus ? exam.attemptStatus : '') >= 0 ? Tokens.PRIMARY : Tokens.TEXT_SECONDARY,
+                          bg: ['STARTED', 'IN_PROGRESS'].indexOf(exam.attemptStatus ? exam.attemptStatus : '') >= 0 ? Tokens.PRIMARY_SOFT : Tokens.SURFACE_ALT
+                        })
+                      }.width('100%')
+                      if (exam.paperName) {
+                        Text(exam.paperName).fontSize(13).fontColor(Tokens.TEXT_SECONDARY)
                       }
-                    }
-                  }.alignItems(HorizontalAlign.Start).width('100%')
+                      Row({ space: 16 }) {
+                        Text(Formatters.epochToDateTime(exam.startEpochMillis)).fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
+                        Text(Formatters.durationText(exam.durationSeconds)).fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
+                        if (exam.score !== undefined) {
+                          Text('得分 ' + Formatters.scoreText(exam.score)).fontSize(12).fontColor(Tokens.PRIMARY)
+                        }
+                      }
+                    }.alignItems(HorizontalAlign.Start).width('100%')
+                  }
                 }
                 .onClick(() => {
                   router.pushUrl({ url: 'pages/ExamTakingPage', params: { examId: exam.id } });
@@ -404,14 +406,16 @@ struct PracticeTab {
           ErrorBanner({ message: this.error })
         } else {
           ForEach(this.sets, (set: PracticeSet) => {
-            CardContainer() {
-              Row() {
-                Column({ space: 4 }) {
-                  Text(set.name ? set.name : '').fontSize(16).fontWeight(FontWeight.Medium).fontColor(Tokens.TEXT_PRIMARY)
-                  Text((set.questionCount ? set.questionCount : 0) + ' 题').fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
-                }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-                TagPill({ label: '开始练习' })
-              }.width('100%')
+            Column() {
+              CardContainer() {
+                Row() {
+                  Column({ space: 4 }) {
+                    Text(set.name ? set.name : '').fontSize(16).fontWeight(FontWeight.Medium).fontColor(Tokens.TEXT_PRIMARY)
+                    Text((set.questionCount ? set.questionCount : 0) + ' 题').fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
+                  }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+                  TagPill({ label: '开始练习' })
+                }.width('100%')
+              }
             }
             .onClick(() => {
               router.pushUrl({ url: 'pages/PracticeTakingPage', params: { setId: set.id } });
@@ -444,7 +448,7 @@ struct PracticeTab {
 
 @Component
 struct ProfileTab {
-  @Link tabIndex: number;
+  @Link activeTab: number;
   @State displayName: string = '同学';
   @State username: string = '';
 
@@ -524,7 +528,7 @@ struct ProfileTab {
     .padding({ top: 14, bottom: 14 })
     .onClick(() => {
       if (url === 'pages/Index') {
-        this.tabIndex = 2;
+        this.activeTab = 2;
       } else {
         router.pushUrl({ url: url });
       }

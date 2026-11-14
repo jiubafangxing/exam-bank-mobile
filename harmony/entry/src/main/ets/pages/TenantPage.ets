@@ -53,11 +53,13 @@ struct TenantPage {
         Scroll() {
           Column({ space: 10 }) {
             ForEach(this.tenants, (tenant: TenantMembership) => {
-              CardContainer() {
-                Column({ space: 4 }) {
-                  Text(tenant.tenantName ? tenant.tenantName : '机构').fontSize(16).fontWeight(FontWeight.Medium)
-                  Text(tenant.tenantCode ? tenant.tenantCode : '').fontSize(13).fontColor(Tokens.TEXT_SECONDARY)
-                }.alignItems(HorizontalAlign.Start).width('100%')
+              Column() {
+                CardContainer() {
+                  Column({ space: 4 }) {
+                    Text(tenant.tenantName ? tenant.tenantName : '机构').fontSize(16).fontWeight(FontWeight.Medium)
+                    Text(tenant.tenantCode ? tenant.tenantCode : '').fontSize(13).fontColor(Tokens.TEXT_SECONDARY)
+                  }.alignItems(HorizontalAlign.Start).width('100%')
+                }
               }
               .onClick(() => { this.choose(tenant); })
             }, (tenant: TenantMembership, index: number) => index.toString())

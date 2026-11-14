@@ -36,18 +36,20 @@ struct ArticleListPage {
         Scroll() {
           Column({ space: 8 }) {
             ForEach(this.list, (article: Article) => {
-              CardContainer() {
-                Row({ space: 12 }) {
-                  if (article.coverUrl) {
-                    Image(article.coverUrl).width(64).height(64).borderRadius(10).objectFit(ImageFit.Cover)
-                  }
-                  Column({ space: 4 }) {
-                    Text(article.title ? article.title : '').fontSize(15).fontWeight(FontWeight.Medium).maxLines(2)
-                    if (article.summary) {
-                      Text(article.summary).fontSize(12).fontColor(Tokens.TEXT_SECONDARY).maxLines(2)
+              Column() {
+                CardContainer() {
+                  Row({ space: 12 }) {
+                    if (article.coverUrl) {
+                      Image(article.coverUrl).width(64).height(64).borderRadius(10).objectFit(ImageFit.Cover)
                     }
-                  }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-                }.width('100%')
+                    Column({ space: 4 }) {
+                      Text(article.title ? article.title : '').fontSize(15).fontWeight(FontWeight.Medium).maxLines(2)
+                      if (article.summary) {
+                        Text(article.summary).fontSize(12).fontColor(Tokens.TEXT_SECONDARY).maxLines(2)
+                      }
+                    }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+                  }.width('100%')
+                }
               }
               .onClick(() => {
                 router.pushUrl({ url: 'pages/ArticleDetailPage', params: { articleId: article.id } });

@@ -76,7 +76,7 @@ export struct ErrorBanner {
 export struct PrimaryButton {
   label: string = '';
   loading: boolean = false;
-  enabled: boolean = true;
+  isEnabled: boolean = true;
   onTap: () => void = () => {};
 
   build() {
@@ -85,8 +85,8 @@ export struct PrimaryButton {
       .height(48)
       .borderRadius(999)
       .fontSize(16)
-      .backgroundColor(this.enabled && !this.loading ? Tokens.PRIMARY : '#9DBDD9')
-      .enabled(this.enabled && !this.loading)
+      .backgroundColor(this.isEnabled && !this.loading ? Tokens.PRIMARY : '#9DBDD9')
+      .enabled(this.isEnabled && !this.loading)
       .onClick(() => this.onTap())
   }
 }
