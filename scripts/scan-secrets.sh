@@ -88,6 +88,15 @@ scan_file() {
     tok=$(echo "$line" | grep -oE '[A-Za-z0-9+/_-]{32,}' | head -n1)
     [[ -z "$tok" ]] && continue
     echo "$tok" | grep -qiE '(example|placeholder|abcdef|123456|your|xxxx|sample|dummy)' && continue
+    # 跳过文件路径（含多个 "/" 或已知目录），避免把构建产物路径误判为高熵密钥
+    if [[ "$tok" == */* ]]; then
+      local slash_count
+      slash_count=$(printf '%s' "$tok" | tr -cd '/' | wc -c | tr -d ' ')
+      if [[ "$slash_count" -ge 2 ]]; then continue; fi
+      case "$tok" in
+        build/*|dist/*|android/*|ios/*|harmony/*|scripts/*|docs/*|shared/*|*/Products/*|*.app|*.hap|*.apk) continue ;;
+      esac
+    fi
     # 估算熵：唯一字符比例 + 字符类别
     local score
     score=$(printf '%s' "$tok" | awk '{n=length($0); split("",s); for(i=1;i<=n;i++){c=substr($0,i,1); s[c]=1} u=0; for(k in s) u++; print (u/n>=0.5 && n>=40)?"1":"0"}')

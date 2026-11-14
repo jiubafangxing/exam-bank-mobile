@@ -1,0 +1,183 @@
+name: release
+
+# 打 tag（v*）或手动触发时，构建三端产物并创建 GitHub Release。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Locate Android SDK
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK" || { echo "::error::Android SDK not found at $SDK"; exit 1; }
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: 注入构建配置
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
+          API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
+          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          REGISTRATION_URL: ${{ vars.REGISTRATION_URL }}
+          QUIET: '1'
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::缺少 API_BASE_URL"; exit 1
+          fi
+          ANDROID_SDK_DIR="$ANDROID_SDK_ROOT" bash scripts/inject-config.sh
+      - name: 构建 Debug APK
+        working-directory: android
+        run: |
+          set -o pipefail
+          if [ -x ./gradlew ]; then CMD=./gradlew; else CMD=gradle; fi
+          $CMD :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS Simulator App
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+      - name: 注入构建配置
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
+          API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          REGISTRATION_URL: ${{ vars.REGISTRATION_URL }}
+          QUIET: '1'
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::缺少 API_BASE_URL"; exit 1
+          fi
+          bash scripts/inject-config.sh
+      - name: 生成 Xcode 工程
+        working-directory: ios
+        run: xcodegen generate
+      - name: 构建（模拟器，免签名）
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ExamMobile.xcodeproj \
+            -scheme ExamMobile \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee build.log
+      - name: 打包 .app
+        working-directory: ios
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          ditto -c -k --sequesterRsrc --keepParent ExamMobile.app ../../../../ExamMobile-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: ios/ExamMobile-simulator.zip
+          if-no-files-found: error
+
+  harmony:
+    name: HarmonyOS HAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: 安装系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev
+      - name: 安装 HarmonyOS CLI 工具链
+        uses: ErBWs/setup-ohos@v2
+        with:
+          version: ${{ vars.HARMONY_CLI_VERSION || '6.1.1.280' }}
+          cache: true
+      - name: 配置 Huawei npm 源
+        run: |
+          cat > "$HOME/.npmrc" <<'EOF'
+          registry=https://repo.huaweicloud.com/repository/npm/
+          @ohos:registry=https://repo.harmonyos.com/npm/
+          EOF
+      - name: 注入构建配置
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
+          API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
+          HARMONY_BUNDLE_NAME: ${{ vars.HARMONY_BUNDLE_NAME }}
+          REGISTRATION_URL: ${{ vars.REGISTRATION_URL }}
+          QUIET: '1'
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::缺少 API_BASE_URL"; exit 1
+          fi
+          bash scripts/inject-config.sh
+      - name: 安装 ohpm 依赖并构建 HAP
+        working-directory: harmony
+        run: |
+          set -o pipefail
+          ohpm install --all 2>&1 | tee build.log
+          hvigorw --mode module -p product=default -p buildMode=debug \
+            assembleHap --no-daemon --stacktrace 2>&1 | tee -a build.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harmony-hap
+          path: |
+            harmony/entry/build/**/outputs/**/*.hap
+            harmony/entry/build/**/outputs/**/*.app
+          if-no-files-found: error
+
+  publish:
+    name: Create GitHub Release
+    needs: [android, ios, harmony]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: 列出产物
+        run: find dist -type f -printf '%p (%s bytes)\n'
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          body: |
+            Automated build from `${{ github.sha }}`.
+
+            - Android: debug APK（可直接安装测试）
+            - iOS: simulator `.app`（需签名后才能装真机）
+            - HarmonyOS: unsigned HAP（需签名后才能安装）
+          files: dist/**/*
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: false
