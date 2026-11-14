@@ -38,11 +38,11 @@ fi
 QUIET="${QUIET:-${CI:-0}}"
 if [[ "$QUIET" == "1" || "$QUIET" == "true" ]]; then
   echo "→ 注入构建配置（CI 模式，隐藏域名原值）"
-  echo "  API_ALLOW_CLEARTEXT=$API_ALLOW_CLEARTEXT"
+  echo "  API_ALLOW_CLEARTEXT=$ALLOW_CLEARTEXT"
 else
   echo "→ 注入配置（值不会入库）："
   echo "  API_BASE_URL=<redacted>"
-  echo "  API_ALLOW_CLEARTEXT=$API_ALLOW_CLEARTEXT"
+  echo "  API_ALLOW_CLEARTEXT=$ALLOW_CLEARTEXT"
 fi
 
 # ---------- Android：local.properties ----------

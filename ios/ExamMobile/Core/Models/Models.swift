@@ -298,7 +298,7 @@ struct CalendarItem: Codable, Identifiable {
     var examId: String?
 }
 
-struct AnalysisView: Codable {
+struct AnalysisSummary: Codable {
     var totalExams: Int?
     var attendedExams: Int?
     var averageScore: Double?

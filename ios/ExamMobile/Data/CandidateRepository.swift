@@ -87,7 +87,7 @@ struct CandidateRepository {
     func markNotificationRead(_ id: String) async throws -> Any { try await client.postEmpty("/notifications/\(id)/read") }
     func markAllNotificationsRead() async throws -> Any { try await client.postEmpty("/notifications/read-all") }
     func calendar() async throws -> [CalendarItem] { try await client.get("/calendar") }
-    func analysis() async throws -> AnalysisView { try await client.get("/analysis") }
+    func analysis() async throws -> AnalysisSummary { try await client.get("/analysis") }
     func appeals() async throws -> [AppealItem] { try await client.get("/appeals") }
 
     func createAppeal(examId: String, reason: String) async throws -> Any {

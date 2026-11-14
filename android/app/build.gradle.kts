@@ -18,6 +18,7 @@ fun conf(key: String, default: String = ""): String =
 val apiBaseUrl: String = conf("apiBaseUrl", "https://your-host.example/api")
 val apiAllowCleartext: Boolean = conf("apiAllowCleartext", "false").toBoolean()
 val androidAppId: String = conf("androidAppId", "com.example.exammobile")
+val registrationUrl: String = conf("registrationUrl", "")
 
 android {
     namespace = "com.example.exammobile"

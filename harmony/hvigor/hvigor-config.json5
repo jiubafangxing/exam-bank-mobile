@@ -1,7 +1,8 @@
 {
-  "hvigorVersion": "5.0.0",
-  "dependencies": {
-    "@ohos/hvigor-ohos-plugin": "5.0.0"
-  },
-  "execution": {}
+  "modelVersion": "5.0.0",
+  "dependencies": {},
+  "execution": {},
+  "debugging": {
+    "stacktrace": true
+  }
 }

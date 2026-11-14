@@ -38,6 +38,14 @@ jobs:
           version: ${{ vars.HARMONY_CLI_VERSION || '6.1.1.280' }}
           cache: true
 
+      - name: 配置 Huawei npm 源
+        run: |
+          cat > "$HOME/.npmrc" <<'EOF'
+          registry=https://repo.huaweicloud.com/repository/npm/
+          @ohos:registry=https://repo.harmonyos.com/npm/
+          EOF
+          cat "$HOME/.npmrc"
+
       - name: 校验工具链
         run: |
           hvigorw -v
@@ -68,7 +76,7 @@ jobs:
           set -o pipefail
           hvigorw clean --no-daemon 2>&1 | tee -a build.log || true
           hvigorw --mode module -p product=default -p buildMode=debug \
-            assembleHap --no-daemon 2>&1 | tee -a build.log
+            assembleHap --no-daemon --stacktrace 2>&1 | tee -a build.log
 
       - name: 输出构建错误
         if: failure()
@@ -76,7 +84,7 @@ jobs:
         run: |
           echo "## HarmonyOS build errors" >> "$GITHUB_STEP_SUMMARY"
           if [ -f build.log ]; then
-            grep -nE 'ERROR|error:|Error:|FAILURE|BUILD FAILED|ArkTS|Cannot find|is not assignable|Unknown' build.log | tail -80 | while IFS= read -r line; do
+            grep -n -A 8 -B 1 -E 'ERROR|error:|Error:|FAILURE|BUILD FAILED|ArkTS|Cannot find|is not assignable|Unknown' build.log | tail -120 | while IFS= read -r line; do
               echo "::error file=harmony/,line=1::${line}"
             done
             echo '```' >> "$GITHUB_STEP_SUMMARY"
