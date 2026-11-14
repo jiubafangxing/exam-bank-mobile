@@ -44,7 +44,7 @@ API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
 
 ## 3. 不在本机构建
 
-- `README` 中的本地命令仅用于**打开工程/调试**；
+- 文档中的本地命令仅用于**打开工程/调试**；
 - 日常验证与出包一律 `git push` 触发 Actions，或 `workflow_dispatch` 手动触发；
 - 若本机已安装 `gh`：`gh workflow run build-android.yml`（只提交任务，编译在云端）。
 
