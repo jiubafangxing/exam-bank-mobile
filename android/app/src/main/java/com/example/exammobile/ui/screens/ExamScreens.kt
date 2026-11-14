@@ -485,8 +485,6 @@ fun ResultScreen(repository: CandidateRepository, attemptId: String, nav: AppNav
 // ============================ 解析页 ============================
 
 @Composable
-
-@Composable
 fun ReviewScreen(repository: CandidateRepository, attemptId: String, nav: AppNav) {
     val controller = rememberRemote(attemptId) { repository.review(attemptId) }
     PageScaffold(title = "答题详情", onBack = { nav.back() }) { padding ->

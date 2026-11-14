@@ -169,14 +169,14 @@ export class ApiClient {
 
   private unwrap(raw: string): Object {
     if (!raw || raw.length === 0) {
-      return {};
+      return JSON.parse('{}') as Object;
     }
     const obj = JSON.parse(raw) as Envelope;
     if (obj.code !== undefined && obj.code !== null) {
       if (obj.code !== 0) {
         throw new ApiError(obj.code, obj.message ? obj.message : '请求失败');
       }
-      return obj.data ? obj.data : {};
+      return obj.data ? obj.data : JSON.parse('{}') as Object;
     }
     return obj as Object;
   }

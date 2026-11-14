@@ -43,8 +43,8 @@ struct FacePage {
     });
     if (!result.photoUris || result.photoUris.length === 0) return undefined;
     const uri = result.photoUris[0];
-    const file = fs.openSync(uri, fs.OpenMode.READ_ONLY);
-    const stat = fs.fstatSync(file.fd);
+    const file: fs.File = fs.openSync(uri, fs.OpenMode.READ_ONLY);
+    const stat: fs.Stat = fs.fstatSync(file.fd);
     const buffer = new ArrayBuffer(stat.size);
     fs.readSync(file.fd, buffer);
     fs.closeSync(file);

@@ -17,19 +17,19 @@ final class ApiClient {
     }
 
     func get<T: Decodable>(_ path: String, query: [String: String] = [:]) async throws -> T {
-        decode(try await execute(method: "GET", path: path, query: query))
+        try decode(try await execute(method: "GET", path: path, query: query))
     }
 
     func post<T: Decodable>(_ path: String, body: Data? = nil, headers: [String: String] = [:]) async throws -> T {
-        decode(try await execute(method: "POST", path: path, body: body, headers: headers))
+        try decode(try await execute(method: "POST", path: path, body: body, headers: headers))
     }
 
     func put<T: Decodable>(_ path: String, body: Data? = nil) async throws -> T {
-        decode(try await execute(method: "PUT", path: path, body: body))
+        try decode(try await execute(method: "PUT", path: path, body: body))
     }
 
     func delete<T: Decodable>(_ path: String, query: [String: String] = [:]) async throws -> T {
-        decode(try await execute(method: "DELETE", path: path, query: query))
+        try decode(try await execute(method: "DELETE", path: path, query: query))
     }
 
     func getRaw(_ path: String, query: [String: String] = [:]) async throws -> Any {

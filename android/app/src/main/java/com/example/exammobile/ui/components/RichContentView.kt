@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -93,17 +94,31 @@ fun HtmlText(
     color: Color = Tokens.TextPrimary,
     fontSizeSp: Int = 15
 ) {
-    val text = remember(html) {
-        val raw = html ?: ""
-        runCatching {
-            if (Regex("<[a-z][\\s\\S]*>", RegexOption.IGNORE_CASE).containsMatchIn(raw)) {
-                AnnotatedString.fromHtml(raw)
-            } else {
-                AnnotatedString(raw)
-            }
-        }.getOrDefault(AnnotatedString(raw))
+    val raw = html ?: ""
+    val hasHtml = remember(raw) {
+        Regex("<[a-z][\\s\\S]*>", RegexOption.IGNORE_CASE).containsMatchIn(raw)
     }
-    Text(text = text, modifier = modifier, color = color, fontSize = fontSizeSp.sp)
+    AndroidView(
+        factory = { context ->
+            android.widget.TextView(context).apply {
+                setBackgroundColor(AndroidColor.TRANSPARENT)
+                setTextColor(color.toArgb())
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, fontSizeSp.toFloat())
+                setLineSpacing(0f, 1.15f)
+                includeFontPadding = false
+            }
+        },
+        update = { tv ->
+            tv.setTextColor(color.toArgb())
+            tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, fontSizeSp.toFloat())
+            tv.text = if (hasHtml) {
+                android.text.Html.fromHtml(raw, android.text.Html.FROM_HTML_MODE_LEGACY)
+            } else {
+                raw
+            }
+        },
+        modifier = modifier
+    )
 }
 
 private fun buildDocument(body: String, fontSizeSp: Int): String {
