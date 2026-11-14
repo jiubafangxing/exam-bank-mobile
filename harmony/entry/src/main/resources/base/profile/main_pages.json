@@ -1,0 +1,30 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/LoginPage",
+    "pages/SmsLoginPage",
+    "pages/RegisterPage",
+    "pages/ResetPasswordPage",
+    "pages/TenantPage",
+    "pages/ExamTakingPage",
+    "pages/ResultPage",
+    "pages/ReviewPage",
+    "pages/ScorePage",
+    "pages/AnalysisPage",
+    "pages/RankingPage",
+    "pages/ClassPage",
+    "pages/ExamGroupPage",
+    "pages/MemberPage",
+    "pages/ArticleListPage",
+    "pages/ArticleDetailPage",
+    "pages/TeacherPage",
+    "pages/NotificationPage",
+    "pages/CalendarPage",
+    "pages/AppealPage",
+    "pages/FacePage",
+    "pages/DevicePage",
+    "pages/WrongPage",
+    "pages/PracticeStatsPage",
+    "pages/PracticeTakingPage"
+  ]
+}

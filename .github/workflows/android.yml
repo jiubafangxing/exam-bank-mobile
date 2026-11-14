@@ -1,0 +1,61 @@
+name: build-android
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'shared/**', 'scripts/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', 'shared/**', 'scripts/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Android Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      # 域名等构建配置来自仓库变量/密钥，绝不进仓库
+      - name: 注入构建配置
+        env:
+          # 公开仓库：优先用 secrets（fork PR 拿不到），兼容 vars；日志不打印原值
+          API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
+          API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
+          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          QUIET: '1'
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::缺少 API_BASE_URL 仓库变量（Settings → Variables）"; exit 1
+          fi
+          ANDROID_SDK_DIR="$ANDROID_SDK_ROOT" bash scripts/inject-config.sh
+
+      - name: 生成 Gradle Wrapper（首次）
+        working-directory: android
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.properties ]; then
+            gradle wrapper --gradle-version 8.7
+          fi
+
+      - name: 构建 Debug
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exam-mobile-android-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# pre-commit：提交前密钥扫描，命中即阻断。
+set -uo pipefail
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
+exec bash "$ROOT/scripts/scan-secrets.sh" --staged

@@ -1,0 +1,13 @@
+// ============================================================================
+// Base.xcconfig — 共享基础配置（可提交）
+// 真实域名与凭证在 Secrets.xcconfig（已被 .gitignore 忽略），此处仅默认占位。
+// 注意：xcconfig 中 "//" 会被当作注释，URL 必须写成 https:/$()/host 形式。
+// ============================================================================
+
+API_BASE_URL = https:/$()/your-host.example/api
+IOS_BUNDLE_ID = com.example.exammobile
+API_ALLOW_CLEARTEXT = NO
+REGISTRATION_URL =
+
+// 可选：本地真实配置（scripts/inject-config.sh 生成；不存在时忽略）
+#include? "Secrets.xcconfig"

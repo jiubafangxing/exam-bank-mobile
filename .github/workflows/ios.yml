@@ -1,0 +1,57 @@
+name: build-ios
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'shared/**', 'scripts/**', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['ios/**', 'shared/**', 'scripts/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: iOS Simulator Build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      # 域名等构建配置来自仓库变量/密钥，绝不进仓库
+      - name: 注入构建配置
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
+          API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          QUIET: '1'
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::缺少 API_BASE_URL 仓库变量（Settings → Variables）"; exit 1
+          fi
+          bash scripts/inject-config.sh
+
+      - name: 生成 Xcode 工程
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: 构建（模拟器，免签名）
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project ExamMobile.xcodeproj \
+            -scheme ExamMobile \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exam-mobile-ios-simulator
+          path: ios/build/Build/Products/Debug-iphonesimulator/*.app
+          if-no-files-found: error

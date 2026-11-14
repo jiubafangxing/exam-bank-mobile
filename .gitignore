@@ -1,0 +1,200 @@
+# ============================================================================
+# exam-bank-mobile · 根级 .gitignore
+# ----------------------------------------------------------------------------
+# 安全基线：本仓库绝不允许提交任何 API Key / Secret / Token /
+# 官网登录用户名与密码 / 数据库密码 / 证书私钥 / 云厂商凭证。
+# 真实值一律放在本地“不入库”文件里，仓库只提交 *.example 占位模板。
+# 本文件由 SECURITY.md 与 scripts/scan-secrets.sh 共同兜底。
+# ============================================================================
+
+# ---------- 1. 通用密钥 / 凭证文件（按扩展名） ----------
+*.key
+*.keys
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.bks
+*.truststore
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.crt
+*.csr
+*.der
+*.gpg
+*.asc
+id_rsa
+id_rsa.*
+id_dsa
+id_dsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
+*.pkcs12
+*.ppk
+
+# ---------- 2. 环境变量 / secrets 目录 ----------
+.env
+.env.*
+!.env.example
+*.env
+!.env.example
+secrets/
+.secrets/
+secret/
+secret.*
+!secret.example
+secrets.*
+!secrets.example
+credentials/
+.credentials/
+credentials.*
+!credentials.example
+config.local.*
+*local.properties
+local.properties
+
+# ---------- 3. 按关键字命名，拦截可能的密钥/密码文件 ----------
+# 匹配任意层级下文件名包含这些关键字（= 文件本身疑似敏感）
+# 注意：仅拦截“文件”，不放行同名的源码目录
+*apikey*
+*api-key*
+*api_key*
+*secret*
+!*.example
+*password*
+*passwd*
+*passphrase*
+*token*
+*credential*
+*accesskey*
+*access-key*
+*access_key*
+*privatekey*
+*private-key*
+*private_key*
+*salt*
+*.jam
+*keystore*
+*keychain*
+
+# 上述通配可能误伤正常源码（如 TokenStore.kt / token.ts），
+# 这里显式放行源码目录与常见源码后缀（见第 7 节 negation 区）。
+
+# ---------- 4. 各端本地配置（真实地址/密钥只留本地） ----------
+# Android
+android/local.properties
+android/local.properties.bak
+android/*.jks
+android/*.keystore
+android/app/release/
+android/.signing/
+android/app/google-services.json
+android/app/agconnect-services.json
+# iOS
+ios/Configs/Secrets.xcconfig
+ios/Configs/*.local.xcconfig
+ios/ExamMobile/GoogleService-Info.plist
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/
+ios/build/
+ios/DerivedData/
+ios/*.mobileprovision
+ios/ExportOptions.plist.local
+# HarmonyOS
+harmony/local.properties
+harmony/entry/src/main/resources/rawfile/secrets/
+harmony/**/*.p12
+harmony/**/*.cer
+harmony/signing/
+harmony/build/
+harmony/.hvigor/
+harmony/oh_modules/
+harmony/**/oh_modules/
+
+# ---------- 5. 数据库文件 / 备份 ----------
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+*.mdb
+*.dump
+*.bak
+*.backup
+*.sql.gz
+*.dump.gz
+!docs/**/*.example.sql
+
+# ---------- 6. 构建产物 / 缓存（避免误带本地配置） ----------
+**/build/
+**/.gradle/
+**/.idea/
+**/.DS_Store
+**/node_modules/
+**/oh_modules/
+**/Pods/
+**/DerivedData/
+**/*.hvigor/
+**/.cxx/
+**/.externalNativeBuild/
+**/captures/
+**/local.properties
+**/*.iml
+
+# ---------- 7. 显式放行：源码与模板（negation 必须靠后） ----------
+# 源码目录整体放行，避免被第 3 节关键字规则误伤
+!android/app/src/**
+!android/gradle/**
+!ios/ExamMobile/**
+!harmony/AppScope/**
+!harmony/entry/src/**
+!shared/**
+!docs/**
+!scripts/**
+!**/*.kt
+!**/*.kts
+!**/*.java
+!**/*.swift
+!**/*.ets
+!**/*.ts
+!**/*.js
+!**/*.json
+!**/*.json5
+!**/*.xml
+!**/*.md
+!**/*.yml
+!**/*.yaml
+!**/*.toml
+!**/*.gradle
+!**/*.pro
+!**/*.xcconfig.example
+!**/*.example
+!**/*.example.*
+# 明确放行 token/key 命名的“源码/类”，不放行同名的“数据文件”
+!**/TokenStore.kt
+!**/TokenStore.swift
+!**/TokenStore.ets
+!**/Tokens.kt
+!**/Tokens.swift
+!**/Tokens.ets
+!shared/design/tokens.json
+!**/*Token*.kt
+!**/*Token*.swift
+!**/*Token*.ets
+
+# ---------- 8. 后端契约：私有资产，禁止入库 ----------
+# OpenAPI / 接口契约文档属于 exam-bank 私有后端，客户端仓库不分发
+shared/openapi/*.yaml
+shared/openapi/*.yml
+shared/openapi/*.json
+shared/openapi/**/*.yaml
+shared/openapi/**/*.yml
+shared/openapi/**/*.json
+docs/api-contract.md
+
+# 鸿蒙构建期生成配置（含域名，禁止入库）
+harmony/entry/src/main/ets/common/config/GeneratedConfig.ets

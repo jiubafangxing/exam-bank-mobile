@@ -1,0 +1,8 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "在线考试考生端" },
+    { "name": "EntryAbility_desc", "value": "在线考试考生端" },
+    { "name": "EntryAbility_label", "value": "在线考试" },
+    { "name": "camera_reason", "value": "用于人脸核验拍照" }
+  ]
+}

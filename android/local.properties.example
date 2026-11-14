@@ -1,0 +1,14 @@
+# ============================================================================
+# 复制为 android/local.properties 后按本机填写（该文件已被 .gitignore 忽略，禁止提交）
+# 也可直接运行：API_BASE_URL=... ANDROID_SDK_DIR=... bash ../scripts/inject-config.sh
+# ============================================================================
+
+# Android SDK 路径（本机）
+sdk.dir=/absolute/path/to/Android/sdk
+
+# 考试端后端地址（构建期注入，绝不提交真实域名到仓库）
+apiBaseUrl=https://your-host.example/api
+apiAllowCleartext=false
+
+# 可选：覆盖 applicationId
+# androidAppId=com.example.exammobile

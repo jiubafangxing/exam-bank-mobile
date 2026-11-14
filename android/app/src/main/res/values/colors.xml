@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 与 shared/design/tokens.json 保持一致 -->
+    <color name="primary">#1F5F99</color>
+    <color name="primary_dark">#16466F</color>
+    <color name="background">#F4F6FB</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#8A94A6</color>
+    <color name="border">#E2EAF3</color>
+</resources>

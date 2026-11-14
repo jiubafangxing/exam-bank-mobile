@@ -1,0 +1,11 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "exam-bank-mobile-harmony",
+  "version": "1.0.0",
+  "description": "在线考试 · 考生端 HarmonyOS 原生客户端",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {}
+}

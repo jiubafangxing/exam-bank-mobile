@@ -1,0 +1,8 @@
+# ============================================================================
+# 复制为 harmony/local.properties 后按本机填写（已被 .gitignore 忽略，禁止提交）
+# 或直接运行：API_BASE_URL="https://..." bash ../scripts/inject-config.sh
+# 真正的运行期配置写入 entry/src/main/ets/common/config/GeneratedConfig.ets（同样不入库）
+# ============================================================================
+apiBaseUrl=https://your-host.example/api
+apiAllowCleartext=false
+harmonyBundleName=com.example.exammobile
