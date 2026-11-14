@@ -182,7 +182,7 @@ export struct IconTile {
   @Prop label: string = '';
   @Prop fg: string = Tokens.PRIMARY;
   @Prop bg: string = Tokens.PRIMARY_SOFT;
-  @Prop size: number = 44;
+  @Prop tileSize: number = 44;
   @Prop fontSize: number = 0;
 
   private glyph(): string {
@@ -193,15 +193,15 @@ export struct IconTile {
   build() {
     Stack({ alignContent: Alignment.Center }) {
       Text(this.glyph())
-        .fontSize(this.fontSize > 0 ? this.fontSize : Math.floor(this.size * 0.4))
+        .fontSize(this.fontSize > 0 ? this.fontSize : Math.floor(this.tileSize * 0.4))
         .fontWeight(FontWeight.Bold)
         .fontColor(this.fg)
         .textAlign(TextAlign.Center)
         .width('100%')
     }
-    .width(this.size)
-    .height(this.size)
-    .borderRadius(Math.floor(this.size * 0.32))
+    .width(this.tileSize)
+    .height(this.tileSize)
+    .borderRadius(Math.floor(this.tileSize * 0.32))
     .linearGradient({ angle: 145, colors: [[this.bg, 0], ['#FFFFFFFF', 1]] })
   }
 }
@@ -309,7 +309,7 @@ export struct ListRow {
   build() {
     Row({ space: 12 }) {
       if (this.tileLabel.length > 0) {
-        IconTile({ label: this.tileLabel, fg: this.tileFg, bg: this.tileBg, size: 34, fontSize: 14 })
+        IconTile({ label: this.tileLabel, fg: this.tileFg, bg: this.tileBg, tileSize: 34, fontSize: 14 })
       }
       Column({ space: 2 }) {
         Text(this.title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(Tokens.TEXT_PRIMARY).maxLines(1)

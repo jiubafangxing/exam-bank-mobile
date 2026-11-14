@@ -219,8 +219,9 @@ struct MemberPage {
               EmptyView({ text: '暂无订单' })
             } else {
               ForEach(this.orders, (order: OrderItem, i: number) => {
-                CardContainer() {
-                  Column({ space: 8 }) {
+                Column() {
+                  CardContainer() {
+                    Column({ space: 8 }) {
                     Row() {
                       Column({ space: 4 }) {
                         Text(this.bizText(order.bizType) +
@@ -249,7 +250,8 @@ struct MemberPage {
                         })
                       }.width('100%')
                     }
-                  }.alignItems(HorizontalAlign.Start).width('100%')
+                    }.alignItems(HorizontalAlign.Start).width('100%')
+                  }
                 }.margin({ bottom: 8 })
               }, (order: OrderItem, i: number) => i.toString())
             }

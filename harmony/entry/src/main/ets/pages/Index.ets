@@ -171,7 +171,7 @@ struct HomeTab {
         if (AppConfig.REGISTRATION_URL.length > 0) {
           CardContainer() {
             Row({ space: 12 }) {
-              IconTile({ label: '报', fg: Tokens.AMBER, bg: Tokens.AMBER_SOFT, size: 44 })
+              IconTile({ label: '报', fg: Tokens.AMBER, bg: Tokens.AMBER_SOFT, tileSize: 44 })
               Column({ space: 3 }) {
                 Text('考试报名').fontSize(15).fontWeight(FontWeight.Bold).fontColor(Tokens.TEXT_PRIMARY)
                 Text('查看招录公告、岗位与报名进度').fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
@@ -210,7 +210,7 @@ struct HomeTab {
         label: label,
         fg: Tokens.palette(paletteIndex).fg,
         bg: Tokens.palette(paletteIndex).bg,
-        size: 46,
+        tileSize: 46,
         fontSize: 19
       })
       Text(label).fontSize(12).fontColor(Tokens.TEXT_PRIMARY).maxLines(1)
@@ -299,7 +299,7 @@ struct HomeTab {
                       label: this.itemLabel(item),
                       fg: Tokens.palette(row * 4 + col).fg,
                       bg: Tokens.palette(row * 4 + col).bg,
-                      size: 44,
+                      tileSize: 44,
                       fontSize: 18
                     })
                     Text(this.itemLabel(item)).fontSize(12).fontColor(Tokens.TEXT_PRIMARY).maxLines(1)
@@ -319,7 +319,7 @@ struct HomeTab {
     if (component.items && component.items.length > 0) {
       CardContainer() {
         Row({ space: 12 }) {
-          IconTile({ label: '公', fg: Tokens.AMBER, bg: '#FFFFFFFF', size: 38, fontSize: 16 })
+          IconTile({ label: '公', fg: Tokens.AMBER, bg: '#FFFFFFFF', tileSize: 38, fontSize: 16 })
           Text(this.itemLabel(component.items ? component.items[0] : this.emptyItem()))
             .fontSize(13).fontColor(Tokens.TEXT_PRIMARY).maxLines(1).layoutWeight(1)
           Text('查看').fontSize(12).fontColor(Tokens.AMBER)
@@ -394,7 +394,7 @@ struct HomeTab {
                   label: this.sectionGlyph(component.componentType ? component.componentType : ''),
                   fg: Tokens.palette(index).fg,
                   bg: Tokens.palette(index).bg,
-                  size: 52,
+                  tileSize: 52,
                   fontSize: 20
                 })
               }
@@ -1134,7 +1134,7 @@ struct PracticeTab {
   setCard(set: PracticeSet) {
     CardContainer() {
       Row({ space: 12 }) {
-        IconTile({ label: '练', fg: Tokens.ACCENT, bg: Tokens.ACCENT_SOFT, size: 46, fontSize: 19 })
+        IconTile({ label: '练', fg: Tokens.ACCENT, bg: Tokens.ACCENT_SOFT, tileSize: 46, fontSize: 19 })
         Column({ space: 4 }) {
           Text(set.name ? set.name : (set.title ? set.title : ''))
             .fontSize(16).fontWeight(FontWeight.Bold).fontColor(Tokens.TEXT_PRIMARY).maxLines(2)
