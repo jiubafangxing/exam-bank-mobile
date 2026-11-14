@@ -4,7 +4,7 @@ import { repo } from '../common/repo/CandidateRepository';
 import { SessionStore } from '../common/storage/SessionStore';
 import { LoginResponse } from '../common/model/Models';
 import { Tokens } from '../common/theme/Tokens';
-import { PrimaryButton } from '../components/Common';
+import { PrimaryButton, SecondaryButton, CardContainer, AuthHero } from '../components/Common';
 
 @Entry
 @Component
@@ -50,28 +50,41 @@ struct SmsLoginPage {
 
   build() {
     Scroll() {
-      Column({ space: 12 }) {
-        Text('短信登录').fontSize(26).fontWeight(FontWeight.Bold).width('100%').padding({ top: 48 })
-        Text('输入手机号与验证码').fontSize(14).fontColor(Tokens.TEXT_SECONDARY).width('100%')
+      Column() {
+        AuthHero({ title: '短信登录', subtitle: '输入手机号与验证码，快速进入学习', glyph: '信' })
 
-        TextInput({ placeholder: '手机号', text: this.phone })
-          .type(InputType.PhoneNumber).width('100%').height(46).backgroundColor(Tokens.SURFACE).borderRadius(10)
-          .onChange((value: string) => { this.phone = value; })
-
-        Row({ space: 12 }) {
-          TextInput({ placeholder: '验证码', text: this.code })
-            .type(InputType.Number).layoutWeight(1).height(46).backgroundColor(Tokens.SURFACE).borderRadius(10)
-            .onChange((value: string) => { this.code = value; })
-          Button('发送验证码').height(44).fontSize(13)
-            .backgroundColor(Tokens.SURFACE).fontColor(Tokens.PRIMARY)
-            .onClick(() => { this.sendOtp(); })
-        }.width('100%')
-
-        PrimaryButton({ label: '登录', loading: this.submitting, onTap: () => { this.login(); } })
-          .margin({ top: 8 })
-      }
-      .width('100%')
-      .padding({ left: 24, right: 24 })
+        Column() {
+          CardContainer() {
+            Column({ space: 12 }) {
+              TextInput({ placeholder: '手机号', text: this.phone })
+                .type(InputType.PhoneNumber)
+                .width('100%').height(48)
+                .backgroundColor(Tokens.SURFACE_ALT)
+                .border({ width: 1, color: Tokens.BORDER })
+                .borderRadius(Tokens.RADIUS_LG - 2)
+                .padding({ left: 12, right: 12 })
+                .onChange((value: string) => { this.phone = value; })
+              Row({ space: 10 }) {
+                TextInput({ placeholder: '验证码', text: this.code })
+                  .type(InputType.Number)
+                  .layoutWeight(1).height(48)
+                  .backgroundColor(Tokens.SURFACE_ALT)
+                  .border({ width: 1, color: Tokens.BORDER })
+                  .borderRadius(Tokens.RADIUS_LG - 2)
+                  .padding({ left: 12, right: 12 })
+                  .onChange((value: string) => { this.code = value; })
+                SecondaryButton({ label: '发送验证码', onTap: () => { this.sendOtp(); } })
+              }.width('100%')
+              PrimaryButton({ label: '登录', loading: this.submitting, onTap: () => { this.login(); } })
+                .margin({ top: 6 })
+              Text('密码登录').fontSize(13).fontColor(Tokens.PRIMARY)
+                .onClick(() => { router.pushUrl({ url: 'pages/LoginPage' }); })
+            }.alignItems(HorizontalAlign.Start).width('100%')
+          }
+        }
+        .width('100%')
+        .padding({ left: 20, right: 20, top: 14, bottom: 24 })
+      }.width('100%')
     }
     .width('100%').height('100%').backgroundColor(Tokens.BACKGROUND)
   }

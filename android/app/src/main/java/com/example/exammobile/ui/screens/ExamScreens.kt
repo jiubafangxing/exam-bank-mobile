@@ -2,12 +2,15 @@ package com.example.exammobile.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +29,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.exammobile.core.config.AppConfig
 import com.example.exammobile.core.model.AppJson
 import com.example.exammobile.core.model.ExamSummary
 import com.example.exammobile.core.model.OpenExamSummary
@@ -48,118 +52,366 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.util.Calendar
 
 @Composable
 fun ExamListScreen(repository: CandidateRepository, nav: AppNav) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var filter by remember { mutableStateOf("ALL") }
-    val examsController = rememberRemote("exams") { repository.exams() }
-    val openController = rememberRemote("open") { repository.openExams() }
+    var keyword by remember { mutableStateOf("") }
+    var paidFilter by remember { mutableStateOf("") }
+    var sort by remember { mutableStateOf("startTime") }
+    var reload by remember { mutableIntStateOf(0) }
+    var passwordDialog by remember { mutableStateOf(false) }
+    var passwordValue by remember { mutableStateOf("") }
+    var pendingExam by remember { mutableStateOf<ExamSummary?>(null) }
+    var pendingResult by remember { mutableStateOf(false) }
+
+    val examsController = rememberRemote("exams-$keyword-$paidFilter-$sort-$reload") {
+        repository.exams(buildMap {
+            keyword.trim().takeIf { it.isNotBlank() }?.let { put("keyword", it) }
+            if (paidFilter.isNotEmpty()) put("paid", paidFilter)
+            if (sort.isNotEmpty()) put("sort", sort)
+        })
+    }
+    val openController = rememberRemote("open-$reload") { repository.openExams() }
+
+    fun openRegistration() {
+        val base = AppConfig.registrationUrl.trimEnd('/')
+        if (base.isBlank()) {
+            context.toast("报名入口未配置")
+            return
+        }
+        runCatching {
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("$base/campaigns")))
+        }
+    }
+
+    fun launchExam(exam: ExamSummary, result: Boolean = false, password: String? = null) {
+        scope.launch {
+            runCatching { repository.startExam(exam.id, password) }
+                .onSuccess { state ->
+                    if (result || state.status in listOf("SUBMITTED", "GRADED")) {
+                        nav.result(state.attemptId)
+                    } else {
+                        nav.examTaking(exam.id)
+                    }
+                }
+                .onFailure { e ->
+                    val message = e.userMessage()
+                    if (password == null && message.contains("密码")) {
+                        pendingExam = exam
+                        pendingResult = result
+                        passwordValue = ""
+                        passwordDialog = true
+                    } else {
+                        context.toast(message)
+                    }
+                }
+        }
+    }
+
+    fun startOpen(exam: OpenExamSummary) {
+        when {
+            exam.eligibility == "NEED_PAYMENT" -> scope.launch {
+                runCatching { repository.payOpenExam(exam.id) }
+                    .onSuccess {
+                        context.toast("缴费成功")
+                        reload += 1
+                        val assigned = ExamSummary(id = exam.id, name = exam.name)
+                        launchExam(assigned)
+                    }
+                    .onFailure { context.toast(it.userMessage()) }
+            }
+            exam.eligibility == "READY_TO_START" -> launchExam(
+                ExamSummary(id = exam.id, name = exam.name)
+            )
+            exam.accessMode == "REGISTER" || exam.accessMode == "APPROVAL" -> openRegistration()
+            else -> context.toast(openConditionText(exam))
+        }
+    }
 
     PageScaffold(title = "我的考试") { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("ALL" to "全部", "ONGOING" to "进行中", "FINISHED" to "已结束", "OPEN" to "开放报名").forEach { (key, label) ->
-                    FilterChip(
-                        selected = filter == key,
-                        onClick = { filter = key },
-                        label = { Text(label, fontSize = 13.sp) }
-                    )
-                }
-            }
-            when (filter) {
-                "OPEN" -> AsyncContent(
-                    state = openController.state,
-                    onRetry = { openController.reload() },
-                    emptyCheck = { it.isEmpty() },
-                    emptyText = "暂无可报名考试"
-                ) { list ->
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-                        list.forEach { exam ->
-                            OpenExamCard(exam) {
-                                scope.launch {
-                                    runCatching { repository.payOpenExam(exam.id) }
-                                        .onSuccess { context.toast("报名成功"); openController.reload() }
-                                        .onFailure { context.toast(it.userMessage()) }
-                                }
-                            }
-                        }
-                    }
-                }
-                else -> AsyncContent(
-                    state = examsController.state,
-                    onRetry = { examsController.reload() },
-                    emptyCheck = { filtered(it, filter).isEmpty() },
-                    emptyText = "暂无考试"
-                ) { list ->
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-                        filtered(list, filter).forEach { exam ->
-                            ExamCard(exam) {
-                                val now = System.currentTimeMillis()
-                                val start = exam.startEpochMillis.toLongOrNull() ?: 0L
-                                when {
-                                    exam.attemptStatus in listOf("STARTED", "IN_PROGRESS", "SUBMITTED", "GRADING", "GRADED", "EXPIRED") ->
-                                        nav.examTaking(exam.id)
-                                    start > 0 && now < start -> context.toast("考试尚未开始")
-                                    else -> nav.examTaking(exam.id)
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(16.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun filtered(list: List<ExamSummary>, filter: String): List<ExamSummary> = when (filter) {
-    "ONGOING" -> list.filter { it.attemptStatus in listOf("STARTED", "IN_PROGRESS", "ASSIGNED") && it.status in listOf("ONGOING", "PUBLISHED") }
-    "FINISHED" -> list.filter { it.attemptStatus in listOf("SUBMITTED", "GRADING", "GRADED", "EXPIRED", "ABSENT") }
-    else -> list
-}
-
-@Composable
-private fun ExamCard(exam: ExamSummary, onClick: () -> Unit) {
-    SectionCard(Modifier.padding(vertical = 6.dp)) {
-        Column(Modifier.clickable(onClick = onClick)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(exam.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Tokens.TextPrimary, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                TagPill(
-                    Formatters.attemptStatusLabel(exam.attemptStatus),
-                    fg = if (exam.attemptStatus in listOf("STARTED", "IN_PROGRESS")) Tokens.Primary else Tokens.TextSecondary,
-                    bg = if (exam.attemptStatus in listOf("STARTED", "IN_PROGRESS")) Tokens.PrimarySoft else Tokens.SurfaceAlt
+        Column(
+            Modifier.padding(padding).fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = PagePadding, vertical = 10.dp)
+        ) {
+            GradientHero {
+                Text(
+                    "${Formatters.greeting(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))}，同学",
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "欢迎回来，请按考试时间参加；支持断线续考，作答会自动保存。",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.88f),
+                    lineHeight = 20.sp
                 )
             }
-            if (!exam.paperName.isNullOrBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(exam.paperName, fontSize = 13.sp, color = Tokens.TextSecondary)
+
+            SectionCard(Modifier.padding(top = 12.dp)) {
+                OutlinedTextField(
+                    value = keyword,
+                    onValueChange = { keyword = it },
+                    placeholder = { Text("搜索考试名称", fontSize = 13.sp) },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = Tokens.TextTertiary) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Tokens.Primary,
+                        unfocusedBorderColor = Tokens.Border,
+                        focusedContainerColor = Tokens.Surface,
+                        unfocusedContainerColor = Tokens.SurfaceAlt.copy(alpha = 0.5f)
+                    )
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    listOf("" to "全部", "false" to "免费", "true" to "付费").forEach { (value, label) ->
+                        FilterChip(
+                            selected = paidFilter == value,
+                            onClick = { paidFilter = value },
+                            label = { Text(label, fontSize = 12.sp) }
+                        )
+                    }
+                    listOf("startTime" to "最新", "name" to "名称", "priceAsc" to "价格↑", "priceDesc" to "价格↓").forEach { (value, label) ->
+                        FilterChip(
+                            selected = sort == value,
+                            onClick = { sort = value },
+                            label = { Text(label, fontSize = 12.sp) }
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(Formatters.epochToDateTime(exam.startEpochMillis), fontSize = 12.sp, color = Tokens.TextSecondary)
-                Text(Formatters.durationText(exam.durationSeconds), fontSize = 12.sp, color = Tokens.TextSecondary)
-                exam.score?.let { Text("得分 ${Formatters.scoreText(it)}", fontSize = 12.sp, color = Tokens.Primary) }
+
+            SectionHeader(title = "我的考试")
+            AsyncContent(
+                state = examsController.state,
+                onRetry = { examsController.reload() },
+                emptyCheck = { it.isEmpty() },
+                emptyText = "暂无考试"
+            ) { list ->
+                list.forEach { exam ->
+                    ExamCard(exam, onStart = { launchExam(exam) }, onResult = { launchExam(exam, result = true) })
+                }
+            }
+
+            val openExams = (openController.state as? UiState.Success)?.data.orEmpty()
+            val assignedIds = ((examsController.state as? UiState.Success)?.data.orEmpty()).map { it.id }.toSet()
+            val openVisible = openExams.filter { it.id !in assignedIds }
+            if (openVisible.isNotEmpty() || openController.state is UiState.Loading) {
+                SectionHeader(title = "开放考试", actionLabel = "刷新") { openController.reload() }
+                AsyncContent(
+                    state = openController.state,
+                    onRetry = { openController.reload() },
+                    emptyCheck = { true },
+                    emptyText = ""
+                ) { all ->
+                    all.filter { it.id !in assignedIds }.forEach { exam ->
+                        OpenExamCard(exam) { startOpen(exam) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (passwordDialog && pendingExam != null) {
+        AlertDialog(
+            onDismissRequest = { passwordDialog = false },
+            title = { Text("请输入考试密码") },
+            text = {
+                OutlinedTextField(
+                    value = passwordValue,
+                    onValueChange = { passwordValue = it },
+                    placeholder = { Text("考试密码") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val exam = pendingExam
+                    val asResult = pendingResult
+                    passwordDialog = false
+                    if (exam != null && passwordValue.isNotBlank()) {
+                        launchExam(exam, asResult, passwordValue.trim())
+                    } else {
+                        context.toast("请输入考试密码")
+                    }
+                }) { Text("进入考试") }
+            },
+            dismissButton = { TextButton(onClick = { passwordDialog = false }) { Text("取消") } }
+        )
+    }
+}
+
+private fun examTag(status: String): Triple<String, Color, Color> = when (status) {
+    "IN_PROGRESS", "STARTED" -> Triple("作答中", Tokens.Primary, Tokens.PrimarySoft)
+    "GRADED" -> Triple("已出分", Tokens.Success, Tokens.SuccessSoft)
+    "SUBMITTED", "GRADING" -> Triple("已交卷", Tokens.Warning, Tokens.WarningSoft)
+    "ABSENT" -> Triple("缺考", Tokens.Danger, Tokens.DangerSoft)
+    "EXPIRED" -> Triple("已过期", Tokens.TextSecondary, Tokens.SurfaceAlt)
+    else -> Triple(Formatters.attemptStatusLabel(status), Tokens.TextSecondary, Tokens.SurfaceAlt)
+}
+
+private fun canStartExam(status: String): Boolean =
+    status !in listOf("SUBMITTED", "GRADED", "REGISTERED", "REJECTED", "CANCELLED")
+
+@Composable
+private fun ExamCard(exam: ExamSummary, onStart: () -> Unit, onResult: () -> Unit) {
+    val (tagText, tagFg, tagBg) = examTag(exam.attemptStatus)
+    SectionCard(Modifier.padding(vertical = 6.dp)) {
+        Column {
+            if (!exam.coverUrl.isNullOrBlank()) {
+                coil.compose.AsyncImage(
+                    model = exam.coverUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(132.dp).clip(RoundedCornerShape(16.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    exam.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Tokens.TextPrimary,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.width(8.dp))
+                TagPill(tagText, tagFg, tagBg)
+            }
+            if (!exam.paperName.isNullOrBlank() || exam.displayPrice != null) {
+                Spacer(Modifier.height(5.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(exam.paperName ?: "未命名试卷", fontSize = 13.sp, color = Tokens.TextSecondary)
+                    exam.displayPrice?.let {
+                        Text(" · ¥${Formatters.scoreText(it)}", fontSize = 13.sp, color = Tokens.Danger, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+            if (!exam.intro.isNullOrBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(exam.intro, fontSize = 12.sp, color = Tokens.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+                MiniMeta("开始", Formatters.epochToDateTime(exam.startEpochMillis))
+                MiniMeta("时长", Formatters.durationText(exam.durationSeconds))
+                exam.totalScore?.let { MiniMeta("总分", Formatters.scoreText(it)) }
+                exam.score?.let { MiniMeta("得分", Formatters.scoreText(it), Tokens.Primary) }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (canStartExam(exam.attemptStatus)) {
+                    GradientMiniButton("开始/继续作答", onClick = onStart)
+                }
+                if (exam.attemptStatus in listOf("SUBMITTED", "GRADED")) {
+                    OutlineMiniButton("查看成绩", onClick = onResult)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun OpenExamCard(exam: OpenExamSummary, onPay: () -> Unit) {
+private fun MiniMeta(label: String, value: String, valueColor: Color = Tokens.TextSecondary) {
+    Column {
+        Text(label, fontSize = 10.sp, color = Tokens.TextTertiary)
+        Text(value, fontSize = 12.sp, color = valueColor, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun GradientMiniButton(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Tokens.PrimaryGradient)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 9.dp)
+    ) {
+        Text(text, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun OutlineMiniButton(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Tokens.PrimarySoft)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 9.dp)
+    ) {
+        Text(text, color = Tokens.Primary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+private fun accessModeText(mode: String?): String = when (mode) {
+    "PAID" -> "付费考试"
+    "PASSWORD" -> "密码考试"
+    "VIP" -> "VIP 考试"
+    "POINTS" -> "积分考试"
+    "QRCODE" -> "扫码考试"
+    "ORG_POSITION" -> "部门考试"
+    "REGISTER" -> "报名考试"
+    "APPROVAL" -> "申报审核"
+    "CLASS" -> "班级考试"
+    "FIXED" -> "固定人群"
+    else -> mode ?: "开放考试"
+}
+
+private fun openConditionText(exam: OpenExamSummary): String = when (exam.accessMode) {
+    "REGISTER" -> "请先报名"
+    "APPROVAL" -> "报名审核中"
+    else -> accessModeText(exam.accessMode)
+}
+
+@Composable
+private fun OpenExamCard(exam: OpenExamSummary, onAction: () -> Unit) {
+    val (label, fg, bg) = when (exam.eligibility) {
+        "READY_TO_START" -> Triple("可开始", Tokens.Success, Tokens.SuccessSoft)
+        "NEED_PAYMENT" -> Triple("待缴费", Tokens.Warning, Tokens.WarningSoft)
+        else -> Triple("需条件", Tokens.TextSecondary, Tokens.SurfaceAlt)
+    }
     SectionCard(Modifier.padding(vertical = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(exam.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("${Formatters.epochToDateTime(exam.startEpochMillis)} · ${Formatters.durationText(exam.durationSeconds)}", fontSize = 12.sp, color = Tokens.TextSecondary)
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(accessModeText(exam.accessMode), fontSize = 12.sp, color = Tokens.TextSecondary)
+                    exam.price?.takeIf { it > 0 }?.let {
+                        Text(" / ¥${Formatters.scoreText(it)}", fontSize = 12.sp, color = Tokens.Danger, fontWeight = FontWeight.Medium)
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "${Formatters.epochToDateTime(exam.startEpochMillis)} · ${Formatters.durationText(exam.durationSeconds)}",
+                    fontSize = 12.sp,
+                    color = Tokens.TextSecondary
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
-                if (exam.price != null) Text("¥${Formatters.scoreText(exam.price)}", color = Tokens.Danger, fontWeight = FontWeight.SemiBold)
-                if (exam.payStatus == "PAID" || exam.eligibility == "ELIGIBLE") {
-                    TagPill("已报名", Tokens.Success, Tokens.SuccessSoft)
-                } else {
-                    PrimaryButton("报名", onClick = onPay, modifier = Modifier.width(96.dp))
+                TagPill(label, fg, bg)
+                Spacer(Modifier.height(8.dp))
+                when {
+                    exam.eligibility == "NEED_PAYMENT" -> GradientMiniButton("缴费进入", onAction)
+                    exam.eligibility == "READY_TO_START" -> GradientMiniButton("开始作答", onAction)
+                    exam.accessMode == "REGISTER" || exam.accessMode == "APPROVAL" -> OutlineMiniButton("去报名", onAction)
+                    else -> Text(openConditionText(exam), fontSize = 12.sp, color = Tokens.TextTertiary)
                 }
             }
         }
@@ -451,27 +703,43 @@ fun ResultScreen(repository: CandidateRepository, attemptId: String, nav: AppNav
             Column(
                 Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
             ) {
+                val total = (result.objectiveTotal + result.subjectiveTotal).coerceAtLeast(0.0)
+                val fraction = if (total <= 0) 0f else (result.totalScore / total).toFloat().coerceIn(0f, 1f)
                 SectionCard {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(Formatters.scoreText(result.totalScore), fontSize = 44.sp, fontWeight = FontWeight.Bold, color = Tokens.Primary)
-                        Text("总分", fontSize = 13.sp, color = Tokens.TextSecondary)
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(6.dp))
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { fraction },
+                                modifier = Modifier.size(150.dp),
+                                color = Tokens.Primary,
+                                trackColor = Tokens.PrimarySoft,
+                                strokeWidth = 11.dp
+                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(Formatters.scoreText(result.totalScore), fontSize = 44.sp, fontWeight = FontWeight.Bold, color = Tokens.PrimaryDark)
+                                Text("总分", fontSize = 12.sp, color = Tokens.TextSecondary)
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
                         when (result.isPassed) {
-                            true -> TagPill("已通过", Tokens.Success, Tokens.SuccessSoft)
+                            true -> TagPill("考试通过", Tokens.Success, Tokens.SuccessSoft)
                             false -> TagPill("未通过", Tokens.Danger, Tokens.DangerSoft)
                             null -> TagPill("主观题阅卷中", Tokens.Warning, Tokens.WarningSoft)
                         }
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(6.dp))
+                        Text("满分 ${Formatters.scoreText(total)}", fontSize = 12.sp, color = Tokens.TextTertiary)
+                        Spacer(Modifier.height(14.dp))
                     }
                     DividerLine()
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
                     KeyValueRow("客观题", "${Formatters.scoreText(result.objectiveScore)} / ${Formatters.scoreText(result.objectiveTotal)}")
                     KeyValueRow("主观题", "${Formatters.scoreText(result.subjectiveScore)} / ${Formatters.scoreText(result.subjectiveTotal)}")
                     KeyValueRow("答对", "${result.correctCount} 题")
                     KeyValueRow("答错", "${result.wrongCount} 题")
                     KeyValueRow("待阅", "${result.pendingCount} 题")
-                    if (result.auto) KeyValueRow("交卷方式", "超时自动交卷")
+                    KeyValueRow("交卷方式", if (result.auto) "超时自动交卷" else "手动交卷")
+                    result.submittedAt?.let { KeyValueRow("交卷时间", it) }
                 }
                 Spacer(Modifier.height(16.dp))
                 PrimaryButton("查看解析", onClick = { nav.review(attemptId) })

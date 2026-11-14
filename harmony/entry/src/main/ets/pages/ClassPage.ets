@@ -28,13 +28,13 @@ struct ClassPage {
     this.loading = true;
     try {
       if (this.tab === 0) {
-        this.list = await repo.myClasses();
-      } else {
         const params = new Map<string, string>();
         if (this.keyword.length > 0) params.set('keyword', this.keyword);
         if (this.paidFilter.length > 0) params.set('paid', this.paidFilter);
         if (this.sort.length > 0) params.set('sort', this.sort);
         this.list = await repo.classes(params);
+      } else {
+        this.list = await repo.myClasses();
       }
       this.error = '';
     } catch (e) {
@@ -119,8 +119,8 @@ struct ClassPage {
         }.width('100%')
 
         Row({ space: 8 }) {
-          this.tabButton('我的班级', 0)
-          this.tabButton('全部班级', 1)
+          this.tabButton('全部班级', 0)
+          this.tabButton('我的班级', 1)
         }.width('100%')
 
         if (this.hasPending) {

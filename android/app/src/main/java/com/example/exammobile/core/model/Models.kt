@@ -235,7 +235,11 @@ data class HomeItem(
     val avatarUrl: String? = null,
     val imageUrl: String? = null,
     val path: String? = null,
-    val url: String? = null
+    val url: String? = null,
+    val tag: String? = null,
+    val linkUrl: String? = null,
+    val publishAt: String? = null,
+    val createdAt: String? = null
 )
 
 @Serializable
@@ -268,7 +272,8 @@ data class NotificationItem(
     val content: String? = null,
     val type: String? = null,
     val read: Boolean = false,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val linkUrl: String? = null
 )
 
 @Serializable
@@ -321,7 +326,15 @@ data class PracticeSet(
     val questionCount: Int = 0,
     val totalScore: Double? = null,
     val category: String? = null,
-    val coverUrl: String? = null
+    val coverUrl: String? = null,
+    val mode: String? = null,
+    val durationSeconds: Int? = null,
+    val pointsCost: Int? = null,
+    val price: Double? = null,
+    val accessMode: String? = null,
+    val unlocked: Boolean = true,
+    val joined: Boolean = false,
+    val lockReason: String? = null
 )
 
 @Serializable
@@ -368,11 +381,24 @@ data class WrongQuestion(
     val id: String = "",
     val questionId: String = "",
     val questionType: String? = null,
+    val typeCode: String? = null,
     val stem: String? = null,
+    val options: List<WrongOption> = emptyList(),
+    val answerText: String? = null,
+    val expectedText: String? = null,
+    val analysis: String? = null,
     val sourceType: String? = null,
     val wrongCount: Int = 0,
     val mastered: Boolean = false,
     val lastWrongAt: String? = null
+)
+
+@Serializable
+data class WrongOption(
+    val key: String = "",
+    val text: String = "",
+    val content: String? = null,
+    val correct: Boolean = false
 )
 
 // ---------------- 考试组 / 排行 ----------------
@@ -648,5 +674,10 @@ data class ScorePage(
 data class PracticeVerdict(
     val correct: Boolean? = null,
     val expectedText: String? = null,
-    val analysis: String? = null
+    val expected: List<String> = emptyList(),
+    val expectedKeys: List<String> = emptyList(),
+    val analysis: String? = null,
+    val answeredCount: Int? = null,
+    val correctCount: Int? = null,
+    val wrongCount: Int? = null
 )

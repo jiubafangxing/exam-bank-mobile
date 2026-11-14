@@ -19,6 +19,7 @@ interface SwitchTenantBody { tenantId: string; }
 interface AppealBody { examId: string; reason: string; }
 interface JoinClassBody { password?: string; }
 interface CreateOrderBody { bizType: string; bizId: string; }
+interface PracticeStartBody { password?: string; qrToken?: string; }
 interface FaceCollectBody { photoUrl: string; }
 interface FaceVerifyBody { photoUrl?: string; examId?: string; livenessStatus?: string; }
 interface DeviceBindBody { deviceId: string; deviceName: string; deviceType: string; }
@@ -76,8 +77,8 @@ export class CandidateRepository {
   }
 
   // 考试
-  async exams(): Promise<ExamSummary[]> {
-    return await this.client.get('/exams') as ExamSummary[];
+  async exams(params?: Map<string, string>): Promise<ExamSummary[]> {
+    return await this.client.get('/exams', params) as ExamSummary[];
   }
 
   async openExams(): Promise<OpenExamSummary[]> {
@@ -168,8 +169,13 @@ export class CandidateRepository {
     return await this.client.get('/practice-sets/statistics') as PracticeStatistics;
   }
 
-  async practiceStart(setId: string): Promise<PracticeRecord> {
-    return await this.client.post('/practice-sets/' + setId + '/start', '{}') as PracticeRecord;
+  async practiceStart(setId: string, password?: string, qrToken?: string): Promise<PracticeRecord> {
+    const body = JSON.stringify({ password: password, qrToken: qrToken } as PracticeStartBody);
+    return await this.client.post('/practice-sets/' + setId + '/start', body) as PracticeRecord;
+  }
+
+  async practiceState(recordId: string): Promise<PracticeRecord> {
+    return await this.client.get('/practice-sets/records/' + recordId) as PracticeRecord;
   }
 
   async practiceAnswer(recordId: string, body: PracticeAnswerRequest): Promise<PracticeVerdict> {
@@ -181,9 +187,10 @@ export class CandidateRepository {
   }
 
   // 错题
-  async wrongQuestions(includeMastered: boolean = false): Promise<WrongQuestion[]> {
+  async wrongQuestions(sourceType?: string, includeMastered?: boolean): Promise<WrongQuestion[]> {
     const query = new Map<string, string>();
-    query.set('includeMastered', includeMastered ? 'true' : 'false');
+    if (sourceType) query.set('sourceType', sourceType);
+    if (includeMastered !== undefined) query.set('includeMastered', includeMastered ? 'true' : 'false');
     return await this.client.get('/wrong-questions', query) as WrongQuestion[];
   }
 

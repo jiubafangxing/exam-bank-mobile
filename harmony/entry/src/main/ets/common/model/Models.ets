@@ -188,6 +188,13 @@ export interface HomeItem {
   imageUrl?: string;
   path?: string;
   url?: string;
+  tag?: string;
+  linkUrl?: string;
+  publishAt?: string;
+  createdAt?: string;
+  attemptStatus?: string;
+  startEpochMillis?: string;
+  durationSeconds?: number;
 }
 
 export interface HomeComponent {
@@ -228,6 +235,7 @@ export interface NotificationItem {
   type?: string;
   read?: boolean;
   createdAt?: string;
+  linkUrl?: string;
 }
 
 export interface CalendarItem {
@@ -272,11 +280,20 @@ export interface AppealItem {
 export interface PracticeSet {
   id?: string;
   name?: string;
+  title?: string;
   description?: string;
   questionCount?: number;
   totalScore?: number;
   category?: string;
   coverUrl?: string;
+  mode?: string;
+  durationSeconds?: number;
+  pointsCost?: number;
+  price?: number;
+  accessMode?: string;
+  unlocked?: boolean;
+  joined?: boolean;
+  lockReason?: string;
 }
 
 export interface PracticeStatistics {
@@ -316,11 +333,23 @@ export interface WrongQuestion {
   id?: string;
   questionId?: string;
   questionType?: string;
+  typeCode?: string;
   stem?: string;
+  options?: WrongOption[];
+  answerText?: string;
+  expectedText?: string;
+  analysis?: string;
   sourceType?: string;
   wrongCount?: number;
   mastered?: boolean;
   lastWrongAt?: string;
+}
+
+export interface WrongOption {
+  key?: string;
+  text?: string;
+  content?: string;
+  correct?: boolean;
 }
 
 export interface ExamGroupItem {
@@ -464,8 +493,18 @@ export interface Envelope {
 export interface ExamRouteParams {
   examId?: string;
   attemptId?: string;
+  recordId?: string;
   setId?: string;
   articleId?: string;
+}
+
+export interface TabRouteParams {
+  tab?: number;
+}
+
+export interface BizRouteParams {
+  bizType?: string;
+  bizId?: string;
 }
 
 // 答题详情 / 成绩列表
@@ -511,6 +550,11 @@ export interface ScorePage {
 
 export interface PracticeVerdict {
   correct?: boolean;
+  expected?: string[];
+  expectedKeys?: string[];
   expectedText?: string;
   analysis?: string;
+  answeredCount?: number;
+  correctCount?: number;
+  wrongCount?: number;
 }

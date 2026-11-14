@@ -2,7 +2,7 @@ import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { repo } from '../common/repo/CandidateRepository';
 import { Tokens } from '../common/theme/Tokens';
-import { PrimaryButton } from '../components/Common';
+import { PrimaryButton, SecondaryButton, CardContainer, AuthHero } from '../components/Common';
 
 @Entry
 @Component
@@ -44,26 +44,49 @@ struct ResetPasswordPage {
 
   build() {
     Scroll() {
-      Column({ space: 12 }) {
-        Text('重置密码').fontSize(26).fontWeight(FontWeight.Bold).width('100%').padding({ top: 48 })
-        Text('通过手机号验证后设置新密码').fontSize(14).fontColor(Tokens.TEXT_SECONDARY).width('100%')
+      Column() {
+        AuthHero({ title: '重置密码', subtitle: '通过手机号验证后设置新密码', glyph: '密' })
 
-        TextInput({ placeholder: '手机号', text: this.phone }).type(InputType.PhoneNumber).width('100%').height(46).backgroundColor(Tokens.SURFACE).borderRadius(10)
-          .onChange((v: string) => { this.phone = v; })
-        Row({ space: 12 }) {
-          TextInput({ placeholder: '验证码', text: this.code }).type(InputType.Number).layoutWeight(1).height(46).backgroundColor(Tokens.SURFACE).borderRadius(10)
-            .onChange((v: string) => { this.code = v; })
-          Button('发送验证码').height(44).fontSize(13).backgroundColor(Tokens.SURFACE).fontColor(Tokens.PRIMARY)
-            .onClick(() => { this.sendOtp(); })
-        }.width('100%')
-        TextInput({ placeholder: '新密码', text: this.password }).type(InputType.Password).width('100%').height(46).backgroundColor(Tokens.SURFACE).borderRadius(10)
-          .onChange((v: string) => { this.password = v; })
-
-        PrimaryButton({ label: '确认重置', loading: this.submitting, onTap: () => { this.reset(); } })
-          .margin({ top: 8 })
-      }
-      .width('100%')
-      .padding({ left: 24, right: 24 })
+        Column() {
+          CardContainer() {
+            Column({ space: 12 }) {
+              TextInput({ placeholder: '手机号', text: this.phone })
+                .type(InputType.PhoneNumber)
+                .width('100%').height(48)
+                .backgroundColor(Tokens.SURFACE_ALT)
+                .border({ width: 1, color: Tokens.BORDER })
+                .borderRadius(Tokens.RADIUS_LG - 2)
+                .padding({ left: 12, right: 12 })
+                .onChange((v: string) => { this.phone = v; })
+              Row({ space: 10 }) {
+                TextInput({ placeholder: '验证码', text: this.code })
+                  .type(InputType.Number)
+                  .layoutWeight(1).height(48)
+                  .backgroundColor(Tokens.SURFACE_ALT)
+                  .border({ width: 1, color: Tokens.BORDER })
+                  .borderRadius(Tokens.RADIUS_LG - 2)
+                  .padding({ left: 12, right: 12 })
+                  .onChange((v: string) => { this.code = v; })
+                SecondaryButton({ label: '发送验证码', onTap: () => { this.sendOtp(); } })
+              }.width('100%')
+              TextInput({ placeholder: '新密码', text: this.password })
+                .type(InputType.Password)
+                .width('100%').height(48)
+                .backgroundColor(Tokens.SURFACE_ALT)
+                .border({ width: 1, color: Tokens.BORDER })
+                .borderRadius(Tokens.RADIUS_LG - 2)
+                .padding({ left: 12, right: 12 })
+                .onChange((v: string) => { this.password = v; })
+              PrimaryButton({ label: '确认重置', loading: this.submitting, onTap: () => { this.reset(); } })
+                .margin({ top: 6 })
+              Text('返回登录').fontSize(13).fontColor(Tokens.PRIMARY)
+                .onClick(() => { router.pushUrl({ url: 'pages/LoginPage' }); })
+            }.alignItems(HorizontalAlign.Start).width('100%')
+          }
+        }
+        .width('100%')
+        .padding({ left: 20, right: 20, top: 14, bottom: 24 })
+      }.width('100%')
     }
     .width('100%').height('100%').backgroundColor(Tokens.BACKGROUND)
   }

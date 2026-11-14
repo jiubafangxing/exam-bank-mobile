@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct ProfileView: View {
@@ -5,71 +6,97 @@ struct ProfileView: View {
     @EnvironmentObject var env: AppEnvironment
     @State private var showLogout = false
 
+    private var displayName: String {
+        session.user?.displayName ?? "同学"
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
-                SectionCard {
-                    HStack(spacing: 16) {
-                        Text(String(session.user?.displayName.prefix(1) ?? "?"))
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Tokens.primary)
-                            .clipShape(Circle())
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(session.user?.displayName ?? "同学")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Tokens.textPrimary)
-                            Text(session.user?.username ?? "")
-                                .font(.system(size: 13))
-                                .foregroundColor(Tokens.textSecondary)
+            VStack(alignment: .leading, spacing: 12) {
+                GradientHero {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.20))
+                            Text(String(displayName.prefix(1)))
+                                .font(.system(size: 25, weight: .bold))
+                                .foregroundColor(.white)
                         }
-                        Spacer()
+                        .frame(width: 64, height: 64)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(displayName)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                            Text(session.user?.username ?? "在线考试学员")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.white.opacity(0.85))
+                        }
+                        Spacer(minLength: 0)
+                        Text("学员")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(Capsule())
                     }
                 }
 
-                SectionCard {
-                    ProfileLink(title: "我的成绩", route: .scores)
+                SectionHeader(title: "学习与成绩")
+                SectionCard(padding: 14) {
+                    rowLink("我的成绩", icon: "star.fill", tint: Tokens.amber, bg: Tokens.amberSoft, route: .scores)
                     DividerLine()
-                    ProfileLink(title: "成绩申诉", route: .appeals)
+                    rowLink("成绩申诉", icon: "paperplane.fill", tint: Tokens.coral, bg: Tokens.coralSoft, route: .appeals)
                     DividerLine()
-                    ProfileLink(title: "考试日历", route: .calendar)
+                    rowLink("考试日历", icon: "calendar", tint: Tokens.accent, bg: Tokens.accentSoft, route: .calendar)
                     DividerLine()
-                    ProfileLink(title: "消息通知", route: .notifications)
+                    rowLink("消息通知", icon: "bell.fill", tint: Tokens.sky, bg: Tokens.skySoft, route: .notifications)
                     DividerLine()
-                    ProfileLink(title: "考试组进度", route: .examGroups)
+                    rowLink("考试组进度", icon: "checkmark.seal.fill", tint: Tokens.violet, bg: Tokens.violetSoft, route: .examGroups)
                     DividerLine()
-                    ProfileLink(title: "排行榜", route: .ranking)
+                    rowLink("排行榜", icon: "chart.bar.fill", tint: Tokens.primary, bg: Tokens.primarySoft, route: .ranking)
                 }
 
-                SectionCard {
-                    ProfileLink(title: "在线练习", route: .practiceList)
+                SectionHeader(title: "练习与成长")
+                SectionCard(padding: 14) {
+                    rowLink("在线练习", icon: "square.and.pencil", tint: Tokens.accent, bg: Tokens.accentSoft, route: .practiceList)
                     DividerLine()
-                    ProfileLink(title: "我的错题集", route: .wrong)
+                    rowLink("我的错题集", icon: "exclamationmark.triangle.fill", tint: Tokens.danger, bg: Tokens.dangerSoft, route: .wrong)
                     DividerLine()
-                    ProfileLink(title: "练习统计", route: .practiceStats)
+                    rowLink("练习统计", icon: "chart.bar.doc.horizontal", tint: Tokens.sky, bg: Tokens.skySoft, route: .practiceStats)
                     DividerLine()
-                    ProfileLink(title: "会员中心", route: .member)
+                    rowLink("会员中心", icon: "crown.fill", tint: Tokens.amber, bg: Tokens.amberSoft, route: .member)
                     DividerLine()
-                    ProfileLink(title: "个人分析", route: .analysis)
+                    rowLink("个人分析", icon: "chart.line.uptrend.xyaxis", tint: Tokens.violet, bg: Tokens.violetSoft, route: .analysis)
                     DividerLine()
-                    ProfileLink(title: "班级", route: .classes)
+                    rowLink("班级", icon: "person.2.fill", tint: Tokens.coral, bg: Tokens.coralSoft, route: .classes)
+                }
+
+                SectionHeader(title: "账号与安全")
+                SectionCard(padding: 14) {
+                    rowLink("人脸核验", icon: "faceid", tint: Tokens.sky, bg: Tokens.skySoft, route: .face)
                     DividerLine()
-                    ProfileLink(title: "人脸核验", route: .face)
+                    rowLink("设备管理", icon: "desktopcomputer", tint: Tokens.slate, bg: Tokens.slateSoft, route: .device)
                     DividerLine()
-                    ProfileLink(title: "设备管理", route: .device)
-                    DividerLine()
-                    ProfileLink(title: "修改密码", route: .resetPassword)
+                    rowLink("修改密码", icon: "lock.fill", tint: Tokens.primary, bg: Tokens.primarySoft, route: .resetPassword)
                 }
 
                 Button { showLogout = true } label: {
-                    Text("退出登录").font(.system(size: 16)).foregroundColor(Tokens.danger)
-                        .frame(maxWidth: .infinity, minHeight: 48)
+                    Text("退出登录")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Tokens.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Tokens.dangerSoft)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 12)
+                .padding(.top, 6)
             }
-            .padding(16)
+            .padding(.horizontal, Tokens.pagePadding)
+            .padding(.top, 10)
+            .padding(.bottom, 20)
         }
         .pageBackground()
         .navigationTitle("个人中心")
@@ -81,20 +108,23 @@ struct ProfileView: View {
             Text("确认退出当前账号？")
         }
     }
-}
 
-private struct ProfileLink: View {
-    let title: String
-    let route: Route
-    var body: some View {
+    private func rowLink(
+        _ title: String,
+        icon: String,
+        tint: Color,
+        bg: Color,
+        route: Route
+    ) -> some View {
         NavigationLink(value: route) {
-            HStack {
-                Text(title).font(.system(size: 15)).foregroundColor(Tokens.textPrimary)
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundColor(Tokens.textTertiary)
-            }
-            .padding(.vertical, 14)
-            .contentShape(Rectangle())
+            ListRow(
+                title: title,
+                icon: icon,
+                iconTint: tint,
+                iconBg: bg,
+                action: {}
+            )
+            .allowsHitTesting(false)
         }
         .buttonStyle(.plain)
     }

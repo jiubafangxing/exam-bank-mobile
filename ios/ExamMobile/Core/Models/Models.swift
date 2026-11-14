@@ -253,6 +253,10 @@ struct HomeItem: Codable, Identifiable {
     var imageUrl: String?
     var path: String?
     var url: String?
+    var tag: String?
+    var linkUrl: String?
+    var publishAt: String?
+    var createdAt: String?
 }
 
 struct Article: Codable, Identifiable {
@@ -286,6 +290,7 @@ struct NotificationItem: Codable, Identifiable {
     var type: String?
     var read: Bool?
     var createdAt: String?
+    var linkUrl: String?
 }
 
 struct CalendarItem: Codable, Identifiable {
@@ -338,6 +343,16 @@ struct PracticeSet: Codable, Identifiable {
     var totalScore: Double?
     var category: String?
     var coverUrl: String?
+    var mode: String?
+    var durationSeconds: Int?
+    var pointsCost: Int?
+    var price: Double?
+    var accessMode: String?
+    var unlocked: Bool?
+    var joined: Bool?
+    var lockReason: String?
+
+    var isUnlocked: Bool { unlocked ?? true }
 }
 
 struct PracticeStatistics: Codable {
@@ -378,11 +393,25 @@ struct PracticeAnswerRequest: Codable {
     var elapsedMs: Int?
 }
 
+struct WrongOption: Codable, Identifiable {
+    var key: String?
+    var text: String?
+    var content: String?
+    var correct: Bool?
+
+    var id: String { key ?? UUID().uuidString }
+}
+
 struct WrongQuestion: Codable, Identifiable {
     var id: String?
     var questionId: String?
     var questionType: String?
+    var typeCode: String?
     var stem: String?
+    var options: [WrongOption]?
+    var answerText: String?
+    var expectedText: String?
+    var analysis: String?
     var sourceType: String?
     var wrongCount: Int?
     var mastered: Bool?
@@ -604,5 +633,10 @@ struct ScorePage: Codable {
 struct PracticeVerdict: Codable {
     var correct: Bool?
     var expectedText: String?
+    var expected: [String]?
+    var expectedKeys: [String]?
     var analysis: String?
+    var answeredCount: Int?
+    var correctCount: Int?
+    var wrongCount: Int?
 }

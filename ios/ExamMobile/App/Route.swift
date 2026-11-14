@@ -12,6 +12,7 @@ enum Route: Hashable {
     case classes
     case examGroups
     case member
+    case memberOrder(String, String)
     case articles
     case article(String)
     case teachers
@@ -43,6 +44,7 @@ struct RouteView: View {
         case .classes: ClassView()
         case .examGroups: ExamGroupView()
         case .member: MemberView()
+        case .memberOrder(let bizType, let bizId): MemberView(pendingBizType: bizType, pendingBizId: bizId)
         case .articles: ArticleListView()
         case .article(let id): ArticleDetailView(articleId: id)
         case .teachers: TeacherView()
@@ -53,7 +55,7 @@ struct RouteView: View {
         case .device: DeviceView()
         case .wrong: WrongView()
         case .practiceStats: PracticeStatsView()
-        case .practiceTaking(let id): PracticeTakingView(setId: id)
+        case .practiceTaking(let id): PracticeTakingView(recordId: id)
         case .resetPassword: ResetPasswordView(session: env.session, repository: env.repository)
         }
     }

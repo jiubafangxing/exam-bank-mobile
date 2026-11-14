@@ -69,9 +69,10 @@ enum Formatters {
 
     static func orderStatusLabel(_ status: String?) -> String {
         switch (status ?? "").uppercased() {
-        case "UNPAID", "PENDING": return "待支付"
+        case "UNPAID", "PENDING", "CREATED": return "待支付"
         case "PAID", "SUCCESS": return "已支付"
         case "CANCELLED", "CANCELED": return "已取消"
+        case "CLOSED": return "已关闭"
         case "REFUNDED": return "已退款"
         default: return status ?? ""
         }

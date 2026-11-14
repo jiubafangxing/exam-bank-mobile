@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -448,7 +449,12 @@ private fun groupItemTag(status: String): Triple<String, androidx.compose.ui.gra
     }
 
 @Composable
-fun MemberScreen(repository: CandidateRepository, nav: AppNav) {
+fun MemberScreen(
+    repository: CandidateRepository,
+    nav: AppNav,
+    pendingBizType: String? = null,
+    pendingBizId: String? = null
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var reload by remember { mutableIntStateOf(0) }
@@ -456,27 +462,46 @@ fun MemberScreen(repository: CandidateRepository, nav: AppNav) {
     val levelsController = rememberRemote("levels-$reload") { repository.memberLevels() }
     val ordersController = rememberRemote("orders-$reload") { repository.orders() }
 
+    LaunchedEffect(pendingBizType, pendingBizId) {
+        if (pendingBizType.isNullOrBlank() || pendingBizId.isNullOrBlank()) return@LaunchedEffect
+        runCatching {
+            val existing = repository.orders().firstOrNull {
+                it.bizType == pendingBizType && it.bizId == pendingBizId && it.status in listOf("CREATED", "PAID")
+            }
+            val order = existing ?: repository.createOrder(pendingBizType, pendingBizId)
+            if (order.status != "PAID") repository.payOrder(order.id)
+        }.onSuccess {
+            context.toast("支付成功")
+            reload += 1
+        }.onFailure { context.toast(it.userMessage()) }
+    }
+
     PageScaffold(title = "会员中心", onBack = { nav.back() }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             when (val s = profileController.state) {
-                is UiState.Success -> SectionCard {
+                is UiState.Success -> {
                     val p = s.data
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("${p.realName ?: "我"} · ${p.levelName.ifBlank { if (p.levelCode == "BASIC") "基础会员" else p.levelCode ?: "普通会员" }}",
-                                fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Tokens.Primary)
-                            Text(
-                                when {
-                                    !p.vipExpireAt.isNullOrBlank() -> "VIP 有效期至 ${p.vipExpireAt}"
-                                    p.levelCode != null && p.levelCode != "BASIC" -> "长期有效"
-                                    else -> "基础会员，购买等级享专属考试与练习"
-                                },
-                                fontSize = 12.sp, color = Tokens.TextSecondary
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("${p.pointsBalance ?: p.points}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Tokens.Primary)
-                            Text("积分", fontSize = 11.sp, color = Tokens.TextSecondary)
+                    GradientHero(gradient = Tokens.GoldGradient) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "${p.realName ?: "我"} · ${p.levelName.ifBlank { if (p.levelCode == "BASIC") "基础会员" else p.levelCode ?: "普通会员" }}",
+                                    fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Color.White
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    when {
+                                        !p.vipExpireAt.isNullOrBlank() -> "VIP 有效期至 ${p.vipExpireAt}"
+                                        p.levelCode != null && p.levelCode != "BASIC" -> "长期有效"
+                                        else -> "基础会员，购买等级享专属考试与练习"
+                                    },
+                                    fontSize = 12.sp, color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("${p.pointsBalance ?: p.points}", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("积分余额", fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
+                            }
                         }
                     }
                 }
@@ -485,7 +510,7 @@ fun MemberScreen(repository: CandidateRepository, nav: AppNav) {
                 else -> Unit
             }
 
-            SectionTitle("会员等级")
+            SectionHeader(title = "会员等级")
             val levels = (levelsController.state as? UiState.Success)?.data
             if (levels.isNullOrEmpty()) {
                 EmptyState("暂无在售等级")
@@ -516,7 +541,7 @@ fun MemberScreen(repository: CandidateRepository, nav: AppNav) {
                 }
             }
 
-            SectionTitle("我的订单")
+            SectionHeader(title = "我的订单")
             val orders = (ordersController.state as? UiState.Success)?.data
             if (orders.isNullOrEmpty()) {
                 EmptyState("暂无订单")
@@ -598,15 +623,37 @@ fun NotificationScreen(repository: CandidateRepository, nav: AppNav) {
                 list.forEach { item ->
                     SectionCard(Modifier.padding(vertical = 5.dp)) {
                         Row(Modifier.clickable {
-                            if (!item.read) scope.launch { runCatching { repository.markNotificationRead(item.id) }.onSuccess { controller.reload() } }
-                        }) {
+                            if (!item.read) {
+                                scope.launch {
+                                    runCatching { repository.markNotificationRead(item.id) }
+                                        .onSuccess { controller.reload() }
+                                }
+                            }
+                            val link = item.linkUrl
+                            if (!link.isNullOrBlank()) {
+                                when {
+                                    link.startsWith("http", true) -> runCatching {
+                                        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link)))
+                                    }
+                                    link.contains("exam") -> nav.tab(com.example.exammobile.ui.navigation.Routes.EXAMS)
+                                    link.contains("practice") -> nav.tab(com.example.exammobile.ui.navigation.Routes.PRACTICE)
+                                    link.contains("member") -> nav.member()
+                                    link.contains("score") -> nav.scores()
+                                    else -> nav.notifications()
+                                }
+                            }
+                        }, verticalAlignment = Alignment.Top) {
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     if (!item.read) Box(Modifier.size(7.dp).clip(RoundedCornerShape(4.dp)).background(Tokens.Danger))
                                     Spacer(Modifier.width(6.dp))
-                                    Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                    Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                    item.type?.let { NotificationTypePill(it) }
+                                    if (!item.linkUrl.isNullOrBlank()) {
+                                        Text("›", fontSize = 18.sp, color = Tokens.TextTertiary)
+                                    }
                                 }
-                                item.content?.let { Text(it, fontSize = 12.sp, color = Tokens.TextSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis) }
+                                item.content?.let { Text(it, fontSize = 13.sp, color = Tokens.TextSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 item.createdAt?.let { Text(it, fontSize = 11.sp, color = Tokens.TextTertiary) }
                             }
                         }
@@ -615,6 +662,17 @@ fun NotificationScreen(repository: CandidateRepository, nav: AppNav) {
             }
         }
     }
+}
+
+@Composable
+private fun NotificationTypePill(type: String) {
+    val (label, fg, bg) = when (type.uppercase()) {
+        "APPEAL_RESULT" -> Triple("申诉", Tokens.Warning, Tokens.WarningSoft)
+        "EXAM_PUBLISH" -> Triple("考试", Tokens.Primary, Tokens.PrimarySoft)
+        "SYSTEM" -> Triple("系统", Tokens.Slate, Tokens.SlateSoft)
+        else -> Triple("通知", Tokens.TextSecondary, Tokens.SurfaceAlt)
+    }
+    TagPill(label, fg, bg)
 }
 
 @Composable

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import PhotosUI
 
@@ -14,11 +15,21 @@ struct ScoreView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                GradientHero {
+                    Text("我的成绩")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("每一次考试都是成长的刻度，继续稳稳向前。")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.88))
+                        .padding(.top, 5)
+                }
+                SectionHeader(title: "成绩记录")
                 if loading && records.isEmpty {
                     LoadingView()
                 } else if let error = error, records.isEmpty {
-                    ErrorBanner(message: error).padding(16)
+                    ErrorBanner(message: error).padding(.horizontal, 16)
                 } else if records.isEmpty {
                     EmptyStateView(text: "暂无成绩记录")
                 } else {
@@ -84,22 +95,60 @@ struct AnalysisView: View {
         RemoteContent(loader: { try await env.repository.analysis() }) { a in
             let weak = (a.weakPoints?.isEmpty == false ? (a.weakPoints ?? []) : (a.weakestTypes ?? []))
             ScrollView {
-                VStack(spacing: 12) {
-                    SectionCard {
-                        HStack {
-                            AnalysisCell(title: "总考试", value: "\(a.totalExams ?? 0)")
-                            AnalysisCell(title: "已参加", value: "\(a.attendedExams ?? a.totalExams ?? 0)")
-                            AnalysisCell(title: "平均分", value: Formatters.scoreText(a.avgScore ?? a.averageScore))
-                            AnalysisCell(title: "及格率", value: "\(Int((a.passRate ?? 0) * 100))%")
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    GradientHero {
+                        Text("学习分析")
+                            .font(.system(size: 21, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("看清优势与薄弱点，把时间用在最需要的地方。")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .padding(.top, 5)
+                    }
+                    SectionHeader(title: "学习总览")
+                    HStack(spacing: 10) {
+                        StatTile(
+                            label: "总考试",
+                            value: "\(a.totalExams ?? 0)",
+                            tint: Tokens.primary,
+                            bg: Tokens.primarySoft
+                        )
+                        StatTile(
+                            label: "已参加",
+                            value: "\(a.attendedExams ?? a.totalExams ?? 0)",
+                            tint: Tokens.accent,
+                            bg: Tokens.accentSoft
+                        )
+                        StatTile(
+                            label: "平均分",
+                            value: Formatters.scoreText(a.avgScore ?? a.averageScore),
+                            tint: Tokens.amber,
+                            bg: Tokens.amberSoft
+                        )
+                        StatTile(
+                            label: "及格率",
+                            value: "\(Int((a.passRate ?? 0) * 100))%",
+                            tint: Tokens.success,
+                            bg: Tokens.successSoft
+                        )
                     }
                     SectionCard {
-                        HStack {
-                            AnalysisCell(title: "最低分", value: Formatters.scoreText(a.lowestScore))
-                            AnalysisCell(title: "最高分", value: Formatters.scoreText(a.highestScore))
+                        HStack(spacing: 10) {
+                            StatTile(
+                                label: "最低分",
+                                value: Formatters.scoreText(a.lowestScore),
+                                tint: Tokens.coral,
+                                bg: Tokens.coralSoft
+                            )
+                            StatTile(
+                                label: "最高分",
+                                value: Formatters.scoreText(a.highestScore),
+                                tint: Tokens.violet,
+                                bg: Tokens.violetSoft
+                            )
                         }
                         if let minutes = a.studyMinutes, minutes > 0 {
-                            KeyValueRow(label: "学习时长", value: "\(minutes) 分钟").padding(.top, 6)
+                            KeyValueRow(label: "学习时长", value: "\(minutes) 分钟").padding(.top, 8)
                         }
                     }
                     if !weak.isEmpty {
@@ -244,8 +293,8 @@ struct ClassView: View {
                     Spacer()
                 }
                 Picker("班级", selection: $tab) {
-                    Text("我的班级").tag(0)
-                    Text("全部班级").tag(1)
+                    Text("全部班级").tag(0)
+                    Text("我的班级").tag(1)
                 }
                 .pickerStyle(.segmented)
             }
@@ -253,7 +302,7 @@ struct ClassView: View {
 
             RemoteContent(
                 loader: {
-                    if tab == 0 {
+                    if tab == 1 {
                         return try await env.repository.myClasses()
                     }
                     var params: [String: String] = [:]
@@ -262,7 +311,8 @@ struct ClassView: View {
                     if !sort.isEmpty { params["sort"] = sort }
                     return try await env.repository.classes(params)
                 },
-                emptyCheck: { $0.isEmpty }
+                emptyCheck: { $0.isEmpty },
+                emptyText: "暂无班级"
             ) { list in
                 ScrollView {
                     VStack(spacing: 8) {
@@ -460,9 +510,18 @@ struct ExamGroupView: View {
 
 struct MemberView: View {
     @EnvironmentObject var env: AppEnvironment
+    let pendingBizType: String?
+    let pendingBizId: String?
+
     @State private var reload = 0
     @State private var toast: String?
     @State private var buying = false
+    @State private var handledPending = false
+
+    init(pendingBizType: String? = nil, pendingBizId: String? = nil) {
+        self.pendingBizType = pendingBizType
+        self.pendingBizId = pendingBizId
+    }
 
     var body: some View {
         RemoteContent(loader: {
@@ -473,24 +532,30 @@ struct MemberView: View {
         }) { data in
             let (profile, levels, orders) = data
             ScrollView {
-                VStack(spacing: 12) {
-                    SectionCard {
-                        HStack {
+                VStack(alignment: .leading, spacing: 12) {
+                    GradientHero(gradient: Tokens.goldGradient) {
+                        HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("\((profile.realName ?? "我")) · \(profile.levelName ?? (profile.levelCode == "BASIC" || profile.levelCode == nil ? "基础会员" : (profile.levelCode ?? "会员")))")
-                                    .font(.system(size: 17, weight: .bold)).foregroundColor(Tokens.primary)
-                                Text(profile.vipExpireAt?.isEmpty == false ? "VIP 有效期至 \(profile.vipExpireAt!)" : ((profile.levelCode != nil && profile.levelCode != "BASIC") ? "长期有效" : "基础会员，购买等级享专属考试与练习"))
-                                    .font(.system(size: 12)).foregroundColor(Tokens.textSecondary)
+                                Text("\(profile.realName ?? "我") · \(memberLevelText(profile))")
+                                    .font(.system(size: 19, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text(memberExpiryText(profile))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.white.opacity(0.90))
                             }
-                            Spacer()
-                            VStack(alignment: .trailing) {
-                                Text("\(profile.pointsBalance ?? profile.points ?? 0)").font(.system(size: 20, weight: .bold)).foregroundColor(Tokens.primary)
-                                Text("积分").font(.system(size: 11)).foregroundColor(Tokens.textSecondary)
+                            Spacer(minLength: 0)
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("\(profile.pointsBalance ?? profile.points ?? 0)")
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text("积分余额")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color.white.opacity(0.85))
                             }
                         }
                     }
 
-                    SectionTitle("会员等级")
+                    SectionHeader(title: "会员等级")
                     if levels.isEmpty {
                         EmptyStateView(text: "暂无在售等级")
                     } else {
@@ -498,16 +563,22 @@ struct MemberView: View {
                             SectionCard {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(level.name ?? "").font(.system(size: 15, weight: .semibold))
-                                        Text("\(level.durationDays ?? 0) 天 · \(level.description ?? "")").font(.system(size: 12)).foregroundColor(Tokens.textSecondary)
+                                        Text(level.name ?? "")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(Tokens.textPrimary)
+                                        Text("\(level.durationDays ?? 0) 天 · \(level.description ?? "")")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Tokens.textSecondary)
                                     }
                                     Spacer()
-                                    Text("¥\(Formatters.scoreText(level.price))").font(.system(size: 16, weight: .bold)).foregroundColor(Tokens.danger)
+                                    Text("¥\(Formatters.scoreText(level.price))")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(Tokens.danger)
                                 }
                                 SecondaryButton(title: buying ? "处理中…" : "立即开通") {
                                     guard !buying, let code = level.code else { return }
                                     buying = true
-                                    Task {
+                                    Task { @MainActor in
                                         do {
                                             let order = try await env.repository.createOrder(bizType: "VIP", bizId: code)
                                             _ = try await env.repository.payOrder(order.id ?? "")
@@ -525,7 +596,7 @@ struct MemberView: View {
                         }
                     }
 
-                    SectionTitle("我的订单")
+                    SectionHeader(title: "我的订单")
                     if orders.isEmpty {
                         EmptyStateView(text: "暂无订单")
                     } else {
@@ -533,27 +604,50 @@ struct MemberView: View {
                             SectionCard {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(bizText(order.bizType) + ((order.bizType == "VIP" && !(order.bizId ?? "").isEmpty) ? " / \(order.bizId!)" : "")).font(.system(size: 14, weight: .medium))
-                                        Text("\(order.orderNo ?? "") · \(order.createdAt ?? "")").font(.system(size: 11)).foregroundColor(Tokens.textSecondary)
+                                        Text(
+                                            bizText(order.bizType)
+                                                + ((order.bizType == "VIP" && !(order.bizId ?? "").isEmpty) ? " / \(order.bizId!)" : "")
+                                        )
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Tokens.textPrimary)
+                                        Text("\(order.orderNo ?? "") · \(order.createdAt ?? "")")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(Tokens.textSecondary)
                                     }
                                     Spacer()
                                     VStack(alignment: .trailing, spacing: 4) {
-                                        Text("¥\(Formatters.scoreText(order.amount))").font(.system(size: 15, weight: .semibold)).foregroundColor(Tokens.danger)
-                                        TagPill(text: Formatters.orderStatusLabel(order.status), fg: orderTag(order.status).0, bg: orderTag(order.status).1)
+                                        Text("¥\(Formatters.scoreText(order.amount))")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(Tokens.danger)
+                                        TagPill(
+                                            text: Formatters.orderStatusLabel(order.status),
+                                            fg: orderTag(order.status).0,
+                                            bg: orderTag(order.status).1
+                                        )
                                     }
                                 }
                                 if ["CREATED", "UNPAID", "PENDING"].contains(order.status ?? "") {
                                     HStack(spacing: 12) {
                                         SecondaryButton(title: "继续支付") {
-                                            Task {
-                                                do { _ = try await env.repository.payOrder(order.id ?? ""); toast = "支付成功"; reload += 1 }
-                                                catch { toast = (error as? ApiError)?.errorDescription ?? "支付失败" }
+                                            Task { @MainActor in
+                                                do {
+                                                    _ = try await env.repository.payOrder(order.id ?? "")
+                                                    toast = "支付成功"
+                                                    reload += 1
+                                                } catch {
+                                                    toast = (error as? ApiError)?.errorDescription ?? "支付失败"
+                                                }
                                             }
                                         }
                                         SecondaryButton(title: "取消") {
-                                            Task {
-                                                do { _ = try await env.repository.cancelOrder(order.id ?? ""); toast = "已取消"; reload += 1 }
-                                                catch { toast = (error as? ApiError)?.errorDescription ?? "取消失败" }
+                                            Task { @MainActor in
+                                                do {
+                                                    _ = try await env.repository.cancelOrder(order.id ?? "")
+                                                    toast = "已取消"
+                                                    reload += 1
+                                                } catch {
+                                                    toast = (error as? ApiError)?.errorDescription ?? "取消失败"
+                                                }
                                             }
                                         }
                                     }
@@ -571,6 +665,49 @@ struct MemberView: View {
         .navigationTitle("会员中心")
         .navigationBarTitleDisplayMode(.inline)
         .toast($toast)
+        .task { await handlePendingOrder() }
+    }
+
+    @MainActor
+    private func handlePendingOrder() async {
+        guard !handledPending else { return }
+        guard let bizType = pendingBizType, !bizType.isEmpty,
+              let bizId = pendingBizId, !bizId.isEmpty else { return }
+        handledPending = true
+        do {
+            let all = try await env.repository.orders()
+            var order = all.first {
+                $0.bizType == bizType
+                    && $0.bizId == bizId
+                    && ["CREATED", "PAID"].contains($0.status ?? "")
+            }
+            if order == nil {
+                order = try await env.repository.createOrder(bizType: bizType, bizId: bizId)
+            }
+            if let order = order, order.status != "PAID" {
+                _ = try await env.repository.payOrder(order.id ?? "")
+            }
+            toast = "支付成功"
+            reload += 1
+        } catch {
+            toast = (error as? ApiError)?.errorDescription ?? "支付失败"
+        }
+    }
+
+    private func memberLevelText(_ profile: MemberProfile) -> String {
+        if let name = profile.levelName, !name.isEmpty { return name }
+        if profile.levelCode == "BASIC" || profile.levelCode == nil { return "基础会员" }
+        return profile.levelCode ?? "会员"
+    }
+
+    private func memberExpiryText(_ profile: MemberProfile) -> String {
+        if let expire = profile.vipExpireAt, !expire.isEmpty {
+            return "VIP 有效期至 \(expire)"
+        }
+        if let code = profile.levelCode, code != "BASIC" {
+            return "长期有效"
+        }
+        return "基础会员，购买等级享专属考试与练习"
     }
 
     private func bizText(_ biz: String?) -> String {
@@ -595,40 +732,22 @@ struct MemberView: View {
 
 struct NotificationView: View {
     @EnvironmentObject var env: AppEnvironment
+    @Environment(\.openURL) private var openURL
+
     @State private var reload = 0
     @State private var toast: String?
 
     var body: some View {
-        RemoteContent(loader: { try await env.repository.notifications() }, emptyCheck: { $0.isEmpty }) { list in
+        RemoteContent(
+            loader: { try await env.repository.notifications() },
+            emptyCheck: { $0.isEmpty },
+            emptyText: "暂无通知"
+        ) { list in
             ScrollView {
                 VStack(spacing: 8) {
                     ForEach(list) { item in
-                        SectionCard {
-                            Button {
-                                guard item.read != true else { return }
-                                Task {
-                                    _ = try? await env.repository.markNotificationRead(item.id ?? "")
-                                    reload += 1
-                                }
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 6) {
-                                        if item.read != true {
-                                            Circle().fill(Tokens.danger).frame(width: 7, height: 7)
-                                        }
-                                        Text(item.title ?? "").font(.system(size: 15, weight: .medium)).foregroundColor(Tokens.textPrimary)
-                                    }
-                                    if let content = item.content, !content.isEmpty {
-                                        Text(content).font(.system(size: 12)).foregroundColor(Tokens.textSecondary).lineLimit(3)
-                                    }
-                                    if let created = item.createdAt, !created.isEmpty {
-                                        Text(created).font(.system(size: 11)).foregroundColor(Tokens.textTertiary)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                        SectionCard(padding: 14) {
+                            notificationContent(item)
                         }
                     }
                 }
@@ -642,7 +761,7 @@ struct NotificationView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("全部已读") {
-                    Task {
+                    Task { @MainActor in
                         _ = try? await env.repository.markAllNotificationsRead()
                         reload += 1
                     }
@@ -652,6 +771,106 @@ struct NotificationView: View {
         }
         .toast($toast)
     }
+
+    @ViewBuilder
+    private func notificationContent(_ item: NotificationItem) -> some View {
+        let link = item.linkUrl ?? ""
+        if !link.isEmpty && link.lowercased().hasPrefix("http") {
+            Button {
+                markRead(item, reloadList: true)
+                if let url = URL(string: link) { openURL(url) }
+            } label: {
+                notificationRow(item, showChevron: true)
+            }
+            .buttonStyle(.plain)
+        } else if !link.isEmpty {
+            NavigationLink(value: notificationRoute(link)) {
+                notificationRow(item, showChevron: true)
+            }
+            .buttonStyle(.plain)
+            .simultaneousGesture(TapGesture().onEnded {
+                markRead(item, reloadList: false)
+            })
+        } else {
+            Button {
+                markRead(item, reloadList: true)
+            } label: {
+                notificationRow(item, showChevron: false)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func notificationRow(_ item: NotificationItem, showChevron: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 6) {
+                if item.read != true {
+                    Circle()
+                        .fill(Tokens.danger)
+                        .frame(width: 7, height: 7)
+                        .padding(.top, 5)
+                }
+                Text(item.title ?? "")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Tokens.textPrimary)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+                if let type = item.type, !type.isEmpty {
+                    notificationTypePill(type)
+                }
+                if showChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Tokens.textTertiary)
+                        .padding(.top, 3)
+                }
+            }
+            if let content = item.content, !content.isEmpty {
+                Text(content)
+                    .font(.system(size: 12))
+                    .foregroundColor(Tokens.textSecondary)
+                    .lineLimit(3)
+            }
+            if let created = item.createdAt, !created.isEmpty {
+                Text(created)
+                    .font(.system(size: 11))
+                    .foregroundColor(Tokens.textTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func notificationTypePill(_ type: String) -> some View {
+        switch type.uppercased() {
+        case "APPEAL_RESULT":
+            TagPill(text: "申诉", fg: Tokens.warning, bg: Tokens.warningSoft)
+        case "EXAM_PUBLISH":
+            TagPill(text: "考试", fg: Tokens.primary, bg: Tokens.primarySoft)
+        case "SYSTEM":
+            TagPill(text: "系统", fg: Tokens.slate, bg: Tokens.slateSoft)
+        default:
+            TagPill(text: "通知", fg: Tokens.textSecondary, bg: Tokens.surfaceAlt)
+        }
+    }
+
+    private func notificationRoute(_ link: String) -> Route {
+        let lower = link.lowercased()
+        if lower.contains("practice") { return .practiceList }
+        if lower.contains("member") { return .member }
+        if lower.contains("score") { return .scores }
+        if lower.contains("exam") { return .examList }
+        return .notifications
+    }
+
+    private func markRead(_ item: NotificationItem, reloadList: Bool) {
+        guard item.read != true else { return }
+        Task { @MainActor in
+            _ = try? await env.repository.markNotificationRead(item.id ?? "")
+            if reloadList { reload += 1 }
+        }
+    }
 }
 
 // MARK: - 日历
@@ -660,9 +879,23 @@ struct CalendarView: View {
     @EnvironmentObject var env: AppEnvironment
 
     var body: some View {
-        RemoteContent(loader: { try await env.repository.calendar() }, emptyCheck: { $0.isEmpty }) { list in
+        RemoteContent(
+            loader: { try await env.repository.calendar() },
+            emptyCheck: { $0.isEmpty },
+            emptyText: "暂无安排"
+        ) { list in
             ScrollView {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
+                    GradientHero {
+                        Text("考试日历")
+                            .font(.system(size: 21, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("考试与学习安排一目了然，提前规划每一天。")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .padding(.top, 5)
+                    }
+                    SectionHeader(title: "日程安排")
                     ForEach(list) { item in
                         SectionCard {
                             HStack {

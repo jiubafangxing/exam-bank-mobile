@@ -4,7 +4,7 @@ import { AttemptReview, ReviewQuestion, ExamOption, ExamRouteParams } from '../c
 import { Tokens } from '../common/theme/Tokens';
 import { Formatters } from '../common/util/Formatters';
 import {
-  CardContainer, TagPill, LoadingView, ErrorBanner, KeyValueRow, DividerLine
+  CardContainer, TagPill, LoadingView, ErrorBanner, KeyValueRow, DividerLine, GradientHero
 } from '../components/Common';
 import { RichContent, htmlToText } from '../components/RichContent';
 
@@ -62,13 +62,22 @@ struct ReviewPage {
       } else {
         Scroll() {
           Column({ space: 12 }) {
+            GradientHero({ gradientStart: Tokens.PRIMARY, gradientEnd: Tokens.HERO_END }) {
+              Column({ space: 5 }) {
+                Text('答题详情').fontSize(21).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
+                Text('共 ' + String(this.review.questions ? this.review.questions.length : 0) + ' 题 · 得分 ' +
+                  Formatters.scoreText(this.review.score ? this.review.score.totalScore : undefined))
+                  .fontSize(13).fontColor('#E0FFFFFF')
+              }.alignItems(HorizontalAlign.Start).width('100%')
+            }
+
             CardContainer() {
               Row() {
                 Text('共 ' + String(this.review.questions ? this.review.questions.length : 0) + ' 题')
                   .fontSize(13).fontColor(Tokens.TEXT_SECONDARY)
                 Blank()
                 Text('得分 ' + Formatters.scoreText(this.review.score ? this.review.score.totalScore : undefined))
-                  .fontSize(15).fontColor(Tokens.PRIMARY)
+                  .fontSize(15).fontWeight(FontWeight.Bold).fontColor(Tokens.PRIMARY)
               }.width('100%')
             }
 

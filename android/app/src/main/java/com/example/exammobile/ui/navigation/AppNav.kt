@@ -1,22 +1,30 @@
 package com.example.exammobile.ui.navigation
 
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -49,6 +57,7 @@ object Routes {
     const val CLASSES = "classes"
     const val EXAM_GROUPS = "exam_groups"
     const val MEMBER = "member"
+    const val MEMBER_ORDER = "member/{bizType}/{bizId}"
     const val ARTICLES = "articles"
     const val ARTICLE_DETAIL = "article/{articleId}"
     const val TEACHERS = "teachers"
@@ -59,13 +68,13 @@ object Routes {
     const val DEVICE = "device"
     const val WRONG = "wrong"
     const val PRACTICE_STATS = "practice_stats"
-    const val PRACTICE_TAKING = "practice_taking/{setId}"
+    const val PRACTICE_TAKING = "practice_record/{recordId}"
 
     fun examTaking(examId: String) = "exam/$examId"
     fun result(attemptId: String) = "result/$attemptId"
     fun review(attemptId: String) = "review/$attemptId"
     fun articleDetail(id: String) = "article/$id"
-    fun practiceTaking(setId: String) = "practice_taking/$setId"
+    fun practiceTaking(recordId: String) = "practice_record/$recordId"
 }
 
 class AppNav(private val controller: NavHostController) {
@@ -94,6 +103,7 @@ class AppNav(private val controller: NavHostController) {
     fun classes() = controller.navigate(Routes.CLASSES)
     fun examGroups() = controller.navigate(Routes.EXAM_GROUPS)
     fun member() = controller.navigate(Routes.MEMBER)
+    fun memberOrder(bizType: String, bizId: String) = controller.navigate("member/$bizType/$bizId")
     fun articles() = controller.navigate(Routes.ARTICLES)
     fun articleDetail(id: String) = controller.navigate(Routes.articleDetail(id))
     fun teachers() = controller.navigate(Routes.TEACHERS)
@@ -104,7 +114,7 @@ class AppNav(private val controller: NavHostController) {
     fun device() = controller.navigate(Routes.DEVICE)
     fun wrong() = controller.navigate(Routes.WRONG)
     fun practiceStats() = controller.navigate(Routes.PRACTICE_STATS)
-    fun practiceTaking(setId: String) = controller.navigate(Routes.practiceTaking(setId))
+    fun practiceTaking(recordId: String) = controller.navigate(Routes.practiceTaking(recordId))
 }
 
 private data class TabItem(val route: String, val title: String, val icon: ImageVector)
@@ -117,6 +127,54 @@ private val tabs = listOf(
 )
 
 @Composable
+private fun FloatingTabBar(currentRoute: String?, onSelect: (String) -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(Tokens.Background)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .shadow(18.dp, RoundedCornerShape(24.dp), spotColor = Color(0x260F172A))
+                .clip(RoundedCornerShape(24.dp))
+                .background(Tokens.Surface.copy(alpha = 0.98f))
+                .border(1.dp, Tokens.Border, RoundedCornerShape(24.dp))
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { tab ->
+                val selected = currentRoute == tab.route
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (selected) Tokens.PrimarySoft else Color.Transparent)
+                        .clickable { onSelect(tab.route) }
+                        .padding(vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        tab.icon,
+                        contentDescription = tab.title,
+                        tint = if (selected) Tokens.Primary else Tokens.TextSecondary,
+                        modifier = Modifier.size(21.dp)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        tab.title,
+                        fontSize = 11.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) Tokens.Primary else Tokens.TextSecondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun AppNavHost(
     container: AppContainer,
     authVm: AuthViewModel,
@@ -124,6 +182,7 @@ fun AppNavHost(
     navController: NavHostController
 ) {
     val nav = AppNav(navController)
+    val user by authVm.user.collectAsState()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showBottomBar = currentRoute in tabs.map { it.route }
@@ -133,23 +192,10 @@ fun AppNavHost(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(containerColor = Tokens.Surface) {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = currentRoute == tab.route,
-                            onClick = { if (currentRoute != tab.route) nav.tab(tab.route) },
-                            icon = { Icon(tab.icon, contentDescription = tab.title) },
-                            label = { Text(tab.title) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Tokens.Primary,
-                                selectedTextColor = Tokens.Primary,
-                                unselectedIconColor = Tokens.TextSecondary,
-                                unselectedTextColor = Tokens.TextSecondary,
-                                indicatorColor = Tokens.PrimarySoft
-                            )
-                        )
-                    }
-                }
+                FloatingTabBar(
+                    currentRoute = currentRoute,
+                    onSelect = { route -> if (currentRoute != route) nav.tab(route) }
+                )
             }
         }
     ) { padding ->
@@ -166,7 +212,7 @@ fun AppNavHost(
             composable(Routes.TENANT) { TenantScreen(authVm, nav) }
 
             // ---- 主 Tab ----
-            composable(Routes.HOME) { HomeScreen(container.repository, nav) }
+            composable(Routes.HOME) { HomeScreen(container.repository, nav, user) }
             composable(Routes.EXAMS) { ExamListScreen(container.repository, nav) }
             composable(Routes.PRACTICE) { PracticeListScreen(container.repository, nav) }
             composable(Routes.PROFILE) { ProfileScreen(authVm, nav) }
@@ -189,6 +235,20 @@ fun AppNavHost(
             composable(Routes.CLASSES) { ClassScreen(container.repository, nav) }
             composable(Routes.EXAM_GROUPS) { ExamGroupScreen(container.repository, nav) }
             composable(Routes.MEMBER) { MemberScreen(container.repository, nav) }
+            composable(
+                Routes.MEMBER_ORDER,
+                arguments = listOf(
+                    navArgument("bizType") { type = NavType.StringType },
+                    navArgument("bizId") { type = NavType.StringType }
+                )
+            ) {
+                MemberScreen(
+                    container.repository,
+                    nav,
+                    pendingBizType = it.arguments?.getString("bizType"),
+                    pendingBizId = it.arguments?.getString("bizId")
+                )
+            }
             composable(Routes.ARTICLES) { ArticleListScreen(container.repository, nav) }
             composable(Routes.ARTICLE_DETAIL, arguments = listOf(navArgument("articleId") { type = NavType.StringType })) {
                 ArticleDetailScreen(container.repository, it.arguments?.getString("articleId").orEmpty(), nav)
@@ -201,8 +261,8 @@ fun AppNavHost(
             composable(Routes.DEVICE) { DeviceScreen(container.repository, nav) }
             composable(Routes.WRONG) { WrongScreen(container.repository, nav) }
             composable(Routes.PRACTICE_STATS) { PracticeStatsScreen(container.repository, nav) }
-            composable(Routes.PRACTICE_TAKING, arguments = listOf(navArgument("setId") { type = NavType.StringType })) {
-                PracticeTakingScreen(container.repository, it.arguments?.getString("setId").orEmpty(), nav)
+            composable(Routes.PRACTICE_TAKING, arguments = listOf(navArgument("recordId") { type = NavType.StringType })) {
+                PracticeTakingScreen(container.repository, it.arguments?.getString("recordId").orEmpty(), nav)
             }
         }
     }

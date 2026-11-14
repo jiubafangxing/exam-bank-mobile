@@ -23,15 +23,18 @@ final class RemoteLoader<Value>: ObservableObject {
 struct RemoteContent<Value, Content: View>: View {
     @StateObject private var loader: RemoteLoader<Value>
     private let emptyCheck: (Value) -> Bool
+    private let emptyText: String
     private let content: (Value) -> Content
 
     init(
         loader: @escaping () async throws -> Value,
         emptyCheck: @escaping (Value) -> Bool = { _ in false },
+        emptyText: String = "暂无数据",
         @ViewBuilder content: @escaping (Value) -> Content
     ) {
         _loader = StateObject(wrappedValue: RemoteLoader(loader: loader))
         self.emptyCheck = emptyCheck
+        self.emptyText = emptyText
         self.content = content
     }
 
@@ -47,7 +50,11 @@ struct RemoteContent<Value, Content: View>: View {
                 }
                 .padding(Tokens.pagePadding)
             case .success(let value):
-                if emptyCheck(value) { EmptyStateView() } else { content(value) }
+                if emptyCheck(value) {
+                    EmptyStateView(text: emptyText)
+                } else {
+                    content(value)
+                }
             }
         }
         .task {
