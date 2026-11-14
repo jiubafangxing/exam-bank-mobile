@@ -414,9 +414,9 @@ struct ExamTakingPage {
         Row({ space: 8 }) {
           Text('第 ' + (question.sortNo ? question.sortNo : 0) + ' 题').fontSize(15).fontWeight(FontWeight.Bold)
           TagPill({
-            label: Formatters.questionTypeLabel(resolvedType(question)),
-            fg: Tokens.typeColor(resolvedType(question)).fg,
-            bg: Tokens.typeColor(resolvedType(question)).bg
+            label: Formatters.questionTypeLabel(this.resolvedType(question)),
+            fg: Tokens.typeColor(this.resolvedType(question)).fg,
+            bg: Tokens.typeColor(this.resolvedType(question)).bg
           })
           Blank()
           Text(this.saveStatusText(index)).fontSize(11).fontColor(Tokens.TEXT_TERTIARY)
@@ -428,7 +428,7 @@ struct ExamTakingPage {
 
         RichContent({ content: question.stem ? question.stem : '', fontSize: 16 })
 
-        if (resolvedType(question) === 'FILL') {
+        if (this.resolvedType(question) === 'FILL') {
           Column({ space: 8 }) {
             ForEach(this.fillValues[index], (value: string, blank: number) => {
               TextInput({ placeholder: '第' + (blank + 1) + '空', text: value })
@@ -436,7 +436,7 @@ struct ExamTakingPage {
                 .onChange((v: string) => { this.updateFill(index, blank, v); })
             }, (value: string, blank: number) => blank.toString())
           }.width('100%')
-        } else if (resolvedType(question) === 'ESSAY') {
+        } else if (this.resolvedType(question) === 'ESSAY') {
           TextArea({ placeholder: '请输入作答内容', text: this.answerTexts[index] })
             .width('100%').height(150).backgroundColor(Tokens.SURFACE_ALT).borderRadius(8)
             .onChange((v: string) => { this.updateEssay(index, v); })
