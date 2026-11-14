@@ -14,9 +14,10 @@ permissions:
 jobs:
   build:
     name: iOS Simulator Build
-    runs-on: macos-14
+    runs-on: macos-latest
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: 安装 XcodeGen
         run: brew install xcodegen
@@ -27,6 +28,7 @@ jobs:
           API_BASE_URL: ${{ secrets.API_BASE_URL || vars.API_BASE_URL }}
           API_ALLOW_CLEARTEXT: ${{ vars.API_ALLOW_CLEARTEXT || 'false' }}
           IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          REGISTRATION_URL: ${{ vars.REGISTRATION_URL }}
           QUIET: '1'
         run: |
           if [ -z "$API_BASE_URL" ]; then
