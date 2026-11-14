@@ -189,25 +189,27 @@ struct MemberPage {
               EmptyView({ text: '暂无在售等级' })
             } else {
               ForEach(this.levels, (level: MemberLevel, i: number) => {
-                CardContainer() {
-                  Column({ space: 8 }) {
-                    Row() {
-                      Column({ space: 4 }) {
-                        Text(level.name ? level.name : '').fontSize(15).fontWeight(FontWeight.Bold).fontColor(Tokens.TEXT_PRIMARY)
-                        Text(String(level.durationDays ? level.durationDays : 0) + ' 天 · ' + (level.description ? level.description : ''))
-                          .fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
-                      }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-                      Text('¥' + Formatters.scoreText(level.price)).fontSize(16).fontWeight(FontWeight.Bold).fontColor(Tokens.DANGER)
-                    }.width('100%')
-                    Row() {
-                      SmallAction({
-                        label: '立即开通',
-                        color: '#FFFFFF',
-                        bg: Tokens.PRIMARY,
-                        onTap: () => { this.buy(level); }
-                      })
-                    }.width('100%')
-                  }.alignItems(HorizontalAlign.Start).width('100%')
+                Column() {
+                  CardContainer() {
+                    Column({ space: 8 }) {
+                      Row() {
+                        Column({ space: 4 }) {
+                          Text(level.name ? level.name : '').fontSize(15).fontWeight(FontWeight.Bold).fontColor(Tokens.TEXT_PRIMARY)
+                          Text(String(level.durationDays ? level.durationDays : 0) + ' 天 · ' + (level.description ? level.description : ''))
+                            .fontSize(12).fontColor(Tokens.TEXT_SECONDARY)
+                        }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+                        Text('¥' + Formatters.scoreText(level.price)).fontSize(16).fontWeight(FontWeight.Bold).fontColor(Tokens.DANGER)
+                      }.width('100%')
+                      Row() {
+                        SmallAction({
+                          label: '立即开通',
+                          color: '#FFFFFF',
+                          bg: Tokens.PRIMARY,
+                          onTap: () => { this.buy(level); }
+                        })
+                      }.width('100%')
+                    }.alignItems(HorizontalAlign.Start).width('100%')
+                  }
                 }.margin({ bottom: 8 })
               }, (level: MemberLevel, i: number) => i.toString())
             }

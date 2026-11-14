@@ -380,7 +380,7 @@ struct HomeTab {
         title: component.title ? component.title : (component.componentType === 'TEACHER' ? '教师风采'
           : (component.componentType === 'CLASS_RECOMMEND' ? '推荐班级' : '精选内容')),
         actionLabel: '查看更多',
-        onAction: () => this.openSectionMore(component.componentType)
+        onAction: () => this.openSectionMore(component.componentType ? component.componentType : '')
       })
       CardContainer() {
         Column() {
@@ -391,7 +391,7 @@ struct HomeTab {
                   .width(58).height(58).borderRadius(Tokens.RADIUS_MD + 2).objectFit(ImageFit.Cover)
               } else {
                 IconTile({
-                  label: this.sectionGlyph(component.componentType),
+                  label: this.sectionGlyph(component.componentType ? component.componentType : ''),
                   fg: Tokens.palette(index).fg,
                   bg: Tokens.palette(index).bg,
                   size: 52,
@@ -584,13 +584,14 @@ struct ExamsTab {
       this.exams = list;
       const assigned: string[] = [];
       for (let i = 0; i < list.length; i++) {
-        assigned.push(list[i].id ? list[i].id : '');
+        const exam = list[i];
+        if (exam && exam.id) assigned.push(exam.id);
       }
       const open = await repo.openExams();
       const visible: OpenExamSummary[] = [];
       for (let i = 0; i < open.length; i++) {
-        const oid = open[i].id ? open[i].id : '';
-        if (assigned.indexOf(oid) < 0) visible.push(open[i]);
+        const item = open[i];
+        if (item && item.id && assigned.indexOf(item.id) < 0) visible.push(item);
       }
       this.openExams = visible;
       this.error = '';

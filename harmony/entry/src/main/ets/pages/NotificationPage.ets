@@ -35,8 +35,9 @@ struct NotificationPage {
     if (this.filter.length === 0) return this.list;
     const result: NotificationItem[] = [];
     for (let i = 0; i < this.list.length; i++) {
-      if ((this.list[i].type ? this.list[i].type : '').toUpperCase() === this.filter) {
-        result.push(this.list[i]);
+      const item = this.list[i];
+      if (item && (item.type ? item.type : '').toUpperCase() === this.filter) {
+        result.push(item);
       }
     }
     return result;
